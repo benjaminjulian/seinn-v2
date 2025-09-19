@@ -120,6 +120,10 @@ body {
     background-color: var(--secondary-yellow);
     color: var(--black);
     padding: 0.75rem;
+    height: calc(1.5em + 1.5rem + 4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .input-group .btn:hover {

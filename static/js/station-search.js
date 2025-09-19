@@ -86,7 +86,7 @@ class StationSearch {
             return;
         }
 
-        this.findNearbyButton.innerHTML = `<i class="bi bi-arrow-clockwise spin"></i> ${t('SEARCHING')}`;
+        this.findNearbyButton.innerHTML = `<i class="bi bi-arrow-clockwise spin"></i>`;
         this.findNearbyButton.disabled = true;
 
         navigator.geolocation.getCurrentPosition(
@@ -103,14 +103,14 @@ class StationSearch {
                     console.error('Nearby search error:', error);
                     this.showError(t('ERROR_FIND_NEARBY'));
                 } finally {
-                    this.findNearbyButton.innerHTML = `<i class="bi bi-geo-alt"></i> ${t('USE_MY_LOCATION')}`;
+                    this.findNearbyButton.innerHTML = `<i class="bi bi-geo-alt"></i>`;
                     this.findNearbyButton.disabled = false;
                 }
             },
             (error) => {
                 console.error('Geolocation error:', error);
                 this.showError(t('ERROR_GET_LOCATION'));
-                this.findNearbyButton.innerHTML = '<i class="bi bi-geo-alt"></i> Use My Location';
+                this.findNearbyButton.innerHTML = '<i class="bi bi-geo-alt"></i>';
                 this.findNearbyButton.disabled = false;
             }
         );
