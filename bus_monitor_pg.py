@@ -493,7 +493,8 @@ class BusMonitor:
                 # Verify the updates were applied
                 cursor.execute("""SELECT COUNT(*) FROM bus_status
                                   WHERE recorded_at = %s AND linked_id IS NOT NULL""", (latest_batch,))
-                actual_updates = cursor.fetchone()[0]
+                result = cursor.fetchone()
+                actual_updates = result[0] if result else 0
                 logger.info(f"Updates applied: {actual_updates} records now have linked_id")
 
                 if actual_updates != len(chosen_updates):
@@ -546,7 +547,10 @@ class BusMonitor:
                 "INSERT INTO gtfs_versions (hash, downloaded_at) VALUES (%s, %s) RETURNING id",
                 (gtfs_hash, datetime.now(timezone.utc))
             )
-            version_id = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            if not result:
+                raise Exception("Failed to get version_id from INSERT")
+            version_id = result[0]
 
             # Mark all other versions as inactive
             cursor.execute("UPDATE gtfs_versions SET is_active = FALSE WHERE id != %s", (version_id,))
