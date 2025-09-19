@@ -1,21 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Stöðvaleit - Strætó Vaktar{% endblock %}
+{% block page_id %}station-search{% endblock %}
+
+{% block title %}Station Search - Strætó Monitor{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <h4 class="mb-0"><i class="bi bi-search"></i> <span data-translate="STATION_SEARCH_TITLE">Finna Strætisvagnsstöð</span></h4>
+                <h4 class="mb-0"><i class="bi bi-search"></i> <span data-translate="STATION_SEARCH_TITLE">Find Bus Station</span></h4>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h5 data-translate="SEARCH_BY_NAME">Leit eftir nafni</h5>
+                        <h5 data-translate="SEARCH_BY_NAME">Search by name</h5>
                         <div class="input-group mb-3">
                             <input type="text" id="stationSearch" class="form-control"
-                                   data-translate-placeholder="SEARCH_PLACEHOLDER" placeholder="Sláðu inn nafn stöðvar..." autocomplete="off">
+                                   data-translate-placeholder="SEARCH_PLACEHOLDER" placeholder="Enter station name..." autocomplete="off">
                             <button class="btn btn-outline-secondary" type="button" id="clearSearch">
                                 <i class="bi bi-x-circle"></i>
                             </button>
@@ -23,9 +25,9 @@
                         <div id="searchResults" class="list-group mb-3" style="display: none;"></div>
                     </div>
                     <div class="col-md-6">
-                        <h5 data-translate="FIND_NEARBY_STATIONS">Finna nálægar stöðvar</h5>
+                        <h5 data-translate="FIND_NEARBY_STATIONS">Find nearby stations</h5>
                         <button class="btn btn-success mb-3" id="findNearby">
-                            <i class="bi bi-geo-alt"></i> <span data-translate="USE_MY_LOCATION">Nota staðsetningu mína</span>
+                            <i class="bi bi-geo-alt"></i> <span data-translate="USE_MY_LOCATION">Use my location</span>
                         </button>
                         <div id="nearbyResults" class="list-group"></div>
                     </div>
@@ -37,25 +39,25 @@
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> <span data-translate="HOW_TO_USE">Hvernig á að nota</span></h5>
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> <span data-translate="HOW_TO_USE">How to use</span></h5>
             </div>
             <div class="card-body">
                 <ul class="list-unstyled">
                     <li class="mb-2">
                         <i class="bi bi-search text-primary"></i>
-                        <span data-translate="HOW_TO_SEARCH">Leitaðu að stöðvum eftir nafni eða kóða</span>
+                        <span data-translate="HOW_TO_SEARCH">Search for stations by name or code</span>
                     </li>
                     <li class="mb-2">
                         <i class="bi bi-geo-alt text-success"></i>
-                        <span data-translate="HOW_TO_LOCATION">Finndu stöðvar nálægt þinni staðsetningu</span>
+                        <span data-translate="HOW_TO_LOCATION">Find stations near your location</span>
                     </li>
                     <li class="mb-2">
                         <i class="bi bi-clock text-info"></i>
-                        <span data-translate="HOW_TO_DELAYS">Skoðaðu rauntíma töf upplýsingar</span>
+                        <span data-translate="HOW_TO_DELAYS">View real-time delay information</span>
                     </li>
                     <li class="mb-2">
                         <i class="bi bi-graph-up text-warning"></i>
-                        <span data-translate="HOW_TO_ANALYTICS">Athugaðu greiningar fyrir frammistöðu leiða</span>
+                        <span data-translate="HOW_TO_ANALYTICS">Check analytics for route performance</span>
                     </li>
                 </ul>
             </div>
@@ -63,12 +65,12 @@
 
         <div class="card mt-3">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-activity"></i> <span data-translate="SYSTEM_STATUS">Kerfisstaða</span></h5>
+                <h5 class="mb-0"><i class="bi bi-activity"></i> <span data-translate="SYSTEM_STATUS">System Status</span></h5>
             </div>
             <div class="card-body">
                 <div id="systemStats" class="text-center">
                     <div class="spinner-border" role="status">
-                        <span class="visually-hidden" data-translate="LOADING">Hleður...</span>
+                        <span class="visually-hidden" data-translate="LOADING">Loading...</span>
                     </div>
                 </div>
             </div>
@@ -81,19 +83,19 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="stationModalTitle" data-translate="STATION_DETAILS">Stöðvarupplýsingar</h5>
+                <h5 class="modal-title" id="stationModalTitle" data-translate="STATION_DETAILS">Station Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="stationModalBody">
                 <div class="text-center">
                     <div class="spinner-border" role="status">
-                        <span class="visually-hidden" data-translate="LOADING">Hleður...</span>
+                        <span class="visually-hidden" data-translate="LOADING">Loading...</span>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="CLOSE">Loka</button>
-                <a href="#" class="btn btn-primary" id="viewStationDetail" data-translate="VIEW_ALL_DETAILS">Skoða allar upplýsingar</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="CLOSE">Close</button>
+                <a href="#" class="btn btn-primary" id="viewStationDetail" data-translate="VIEW_ALL_DETAILS">View all details</a>
             </div>
         </div>
     </div>

@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Strætó Vaktar{% endblock %}</title>
+    <title>{% block title %}Strætó Monitor{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     {% block head %}{% endblock %}
 </head>
-<body>
+<body data-page="{% block page_id %}default{% endblock %}">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="bi bi-bus-front"></i> <span data-translate="APP_NAME">Strætó Vaktar</span>
+                <i class="bi bi-bus-front"></i> <span data-translate="APP_NAME">Strætó Monitor</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -23,15 +23,20 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('index') }}">
-                            <i class="bi bi-geo-alt"></i> <span data-translate="NAV_STATION_SEARCH">Stöðvaleit</span>
+                            <i class="bi bi-geo-alt"></i> <span data-translate="NAV_STATION_SEARCH">Station Search</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('analytics') }}">
-                            <i class="bi bi-graph-up"></i> <span data-translate="NAV_ANALYTICS">Greiningar</span>
+                            <i class="bi bi-graph-up"></i> <span data-translate="NAV_ANALYTICS">Analytics</span>
                         </a>
                     </li>
                 </ul>
+                <div class="navbar-nav">
+                    <button class="btn btn-outline-light btn-sm" id="languageToggle" onclick="toggleLanguage()" title="Switch language">
+                        IS
+                    </button>
+                </div>
             </div>
         </div>
     </nav>

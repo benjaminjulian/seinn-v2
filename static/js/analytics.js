@@ -15,6 +15,11 @@ class AnalyticsView {
         this.loadRouteStats();
         this.loadStationRoutePairs();
         this.loadDelayHistogram();
+
+        // Listen for language changes
+        document.addEventListener('languageChanged', () => {
+            this.updateChartsLanguage();
+        });
     }
 
     initEventListeners() {
@@ -524,6 +529,29 @@ class AnalyticsView {
                 </tr>
             `;
         }).join('');
+    }
+
+    updateChartsLanguage() {
+        if (this.delayHistogramChart) {
+            this.delayHistogramChart.options.plugins.title.text = t('DELAY_DISTRIBUTION');
+            this.delayHistogramChart.options.scales.x.title.text = t('DELAY_DISTRIBUTION');
+            this.delayHistogramChart.options.scales.y.title.text = t('ARRIVAL_COUNT');
+            this.delayHistogramChart.update();
+        }
+
+        if (this.routeChart) {
+            this.routeChart.options.plugins.title.text = t('ROUTE_PERFORMANCE');
+            this.routeChart.options.plugins.legend.labels.generateLabels = (chart) => {
+                return [
+                    { text: t('ON_TIME'), fillStyle: '#198754', strokeStyle: '#198754' },
+                    { text: t('LATE'), fillStyle: '#dc3545', strokeStyle: '#dc3545' },
+                    { text: t('EARLY'), fillStyle: '#fd7e14', strokeStyle: '#fd7e14' }
+                ];
+            };
+            this.routeChart.update();
+        }
+
+        this.updateRouteStatsTable();
     }
 }
 

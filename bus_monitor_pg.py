@@ -1050,7 +1050,7 @@ class BusMonitor:
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="Straeto Bus Monitor (PostgreSQL)")
+    parser = argparse.ArgumentParser(description="Strætó Bus Monitor (PostgreSQL)")
     parser.add_argument("--interval", type=int, default=15, help="Polling interval in seconds")
     parser.add_argument("--once", action="store_true", help="Run once instead of continuously")
     parser.add_argument("--force-gtfs", action="store_true", help="Force GTFS data update")
@@ -1074,7 +1074,7 @@ def main():
         monitor.run_continuous(args.interval)
 
 if __name__ == "__main__":
-    print("Starting Straeto Bus Monitor...")
+    print("Starting Strætó Bus Monitor...")
     print(f"DATABASE_URL configured: {'Yes' if os.environ.get('DATABASE_URL') else 'No'}")
 
     try:
