@@ -524,9 +524,9 @@ def station_name_buses(station_name):
         # For each route, find approaching buses for each direction
         approaching_buses = []
         for route in routes:
-            # Get all possible directions/trips for this route that serve our target stations
+            # Get unique directions for this route that serve our target stations
             cursor.execute("""
-                SELECT DISTINCT gt.trip_headsign, gt.direction_id, gt.trip_id
+                SELECT DISTINCT gt.trip_headsign, gt.direction_id
                 FROM gtfs_trips gt
                 JOIN gtfs_stop_times st ON gt.trip_id = st.trip_id AND gt.version_id = st.version_id
                 WHERE gt.route_id = %s
@@ -539,8 +539,26 @@ def station_name_buses(station_name):
             directions = cursor.fetchall()
 
             for direction in directions:
-                # For each direction, find the closest approaching bus
-                # Get the stop sequence for our target stations in this trip direction
+                # For each direction, get a representative trip to understand the stop sequence
+                cursor.execute("""
+                    SELECT gt.trip_id
+                    FROM gtfs_trips gt
+                    JOIN gtfs_stop_times st ON gt.trip_id = st.trip_id AND gt.version_id = st.version_id
+                    WHERE gt.route_id = %s
+                    AND gt.version_id = (SELECT id FROM gtfs_versions WHERE is_active = TRUE LIMIT 1)
+                    AND gt.trip_headsign = %s
+                    AND gt.direction_id = %s
+                    AND st.stop_id IN ({})
+                    ORDER BY gt.trip_id
+                    LIMIT 1
+                """.format(','.join(['%s'] * len(station_ids))),
+                [route['route_id'], direction['trip_headsign'], direction['direction_id']] + station_ids)
+
+                representative_trip = cursor.fetchone()
+                if not representative_trip:
+                    continue
+
+                # Get the stop sequence for our target stations in this direction
                 cursor.execute("""
                     SELECT st.stop_id, st.stop_sequence, s.stop_name
                     FROM gtfs_stop_times st
@@ -549,7 +567,7 @@ def station_name_buses(station_name):
                     AND st.version_id = (SELECT id FROM gtfs_versions WHERE is_active = TRUE LIMIT 1)
                     AND st.stop_id IN ({})
                     ORDER BY st.stop_sequence
-                """.format(','.join(['%s'] * len(station_ids))), [direction['trip_id']] + station_ids)
+                """.format(','.join(['%s'] * len(station_ids))), [representative_trip['trip_id']] + station_ids)
 
                 target_stops = cursor.fetchall()
                 if not target_stops:
@@ -557,52 +575,64 @@ def station_name_buses(station_name):
 
                 target_stop = target_stops[0]  # Use the first stop in sequence for this direction
 
-                # Find buses currently running this route/direction by looking for recent activity
+                # Find the most recent bus for this route
                 cursor.execute("""
                     SELECT bs.*,
                            bd.delay_seconds as latest_delay,
                            bd.scheduled_arrival_time,
                            bd.actual_arrival_time,
                            bd.stop_id as delay_stop_id,
-                           delay_stop.stop_name as delay_stop_name,
-                           current_stop.stop_sequence as current_stop_sequence
+                           delay_stop.stop_name as delay_stop_name
                     FROM bus_status bs
                     LEFT JOIN bus_delays bd ON bs.route = bd.route_id
                         AND bd.bus_status_id = bs.id
                     LEFT JOIN gtfs_stops delay_stop ON bd.stop_id = delay_stop.stop_id
                         AND delay_stop.version_id = (SELECT id FROM gtfs_versions WHERE is_active = TRUE LIMIT 1)
-                    LEFT JOIN gtfs_stop_times current_stop ON bd.stop_id = current_stop.stop_id
-                        AND current_stop.trip_id = %s
-                        AND current_stop.version_id = (SELECT id FROM gtfs_versions WHERE is_active = TRUE LIMIT 1)
                     WHERE bs.route = %s
-                    AND bs.recorded_at >= NOW() - INTERVAL '30 minutes'
-                    AND (current_stop.stop_sequence IS NULL OR current_stop.stop_sequence <= %s)
+                    AND bs.recorded_at >= NOW() - INTERVAL '2 hours'
                     ORDER BY bs.recorded_at DESC
                     LIMIT 1
-                """, (direction['trip_id'], route['route_id'], target_stop['stop_sequence']))
+                """, (route['route_id'],))
 
                 bus_data = cursor.fetchone()
 
                 if bus_data:
-                    # Calculate stations away and estimated arrival time
+                    # Try to calculate stations away if we have current location info
                     stations_away = None
                     estimated_arrival = None
 
-                    if bus_data.get('current_stop_sequence') and target_stop['stop_sequence']:
-                        stations_away = target_stop['stop_sequence'] - bus_data['current_stop_sequence']
+                    # Get the bus's current stop sequence if available
+                    current_stop_sequence = None
+                    if bus_data.get('delay_stop_id'):
+                        cursor.execute("""
+                            SELECT stop_sequence
+                            FROM gtfs_stop_times
+                            WHERE trip_id = %s
+                            AND version_id = (SELECT id FROM gtfs_versions WHERE is_active = TRUE LIMIT 1)
+                            AND stop_id = %s
+                        """, (representative_trip['trip_id'], bus_data['delay_stop_id']))
 
-                        # Get the scheduled arrival time for the target stop
+                        current_seq = cursor.fetchone()
+                        if current_seq:
+                            current_stop_sequence = current_seq['stop_sequence']
+
+                    if current_stop_sequence and target_stop['stop_sequence']:
+                        stations_away = target_stop['stop_sequence'] - current_stop_sequence
+                        if stations_away <= 0:
+                            stations_away = None  # Bus has already passed or is at the station
+
+                    # Calculate estimated arrival time
+                    if bus_data.get('latest_delay') is not None:
                         cursor.execute("""
                             SELECT arrival_time
                             FROM gtfs_stop_times
                             WHERE trip_id = %s
                             AND version_id = (SELECT id FROM gtfs_versions WHERE is_active = TRUE LIMIT 1)
                             AND stop_id = %s
-                        """, (direction['trip_id'], target_stop['stop_id']))
+                        """, (representative_trip['trip_id'], target_stop['stop_id']))
 
                         scheduled_time = cursor.fetchone()
-                        if scheduled_time and bus_data.get('latest_delay'):
-                            # Add delay to scheduled time for estimated arrival
+                        if scheduled_time:
                             from datetime import datetime, timedelta
                             try:
                                 # Parse GTFS time format (HH:MM:SS)
@@ -625,11 +655,11 @@ def station_name_buses(station_name):
                         'route_long_name': route['route_long_name'],
                         'trip_headsign': direction.get('trip_headsign'),
                         'direction_id': direction.get('direction_id'),
-                        'bus_status': dict(bus_data) if bus_data else None,
-                        'latest_delay_seconds': bus_data.get('latest_delay', 0) if bus_data else None,
-                        'delay_measured_at_stop': bus_data.get('delay_stop_name') if bus_data else None,
-                        'delay_stop_id': bus_data.get('delay_stop_id') if bus_data else None,
-                        'stations_away': max(0, stations_away) if stations_away is not None and stations_away > 0 else None,
+                        'bus_status': dict(bus_data),
+                        'latest_delay_seconds': bus_data.get('latest_delay'),
+                        'delay_measured_at_stop': bus_data.get('delay_stop_name'),
+                        'delay_stop_id': bus_data.get('delay_stop_id'),
+                        'stations_away': stations_away,
                         'estimated_arrival': estimated_arrival.isoformat() if estimated_arrival else None,
                         'target_stop_name': target_stop['stop_name']
                     })
