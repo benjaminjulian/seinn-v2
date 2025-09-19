@@ -514,10 +514,10 @@ def search_stations():
 
     except psycopg2.errors.UndefinedTable:
         logger.error("Database tables not found. Run database initialization.")
-        return jsonify({'error': 'Database not initialized. Please contact administrator.'}), 503
+        return jsonify({'error': 'Gagnagrunnur ekki tilbúinn. Vinsamlegast hafðu samband við kerfisstjóra.'}), 503
     except Exception as e:
         logger.error(f"Error searching stations: {e}")
-        return jsonify({'error': 'Database error'}), 500
+        return jsonify({'error': 'Villa í gagnagrunni'}), 500
     finally:
         return_db_connection(conn)
 
@@ -529,7 +529,7 @@ def nearby_stations():
         lon = float(request.args.get('lon'))
         radius = min(float(request.args.get('radius', 1000)), 5000)  # Max 5km
     except (TypeError, ValueError):
-        return jsonify({'error': 'Invalid coordinates'}), 400
+        return jsonify({'error': 'Ógild staðsetning'}), 400
 
     conn = get_db_connection()
     try:
@@ -557,7 +557,7 @@ def nearby_stations():
 
     except Exception as e:
         logger.error(f"Error finding nearby stations: {e}")
-        return jsonify({'error': 'Database error'}), 500
+        return jsonify({'error': 'Villa í gagnagrunni'}), 500
     finally:
         return_db_connection(conn)
 
@@ -624,7 +624,7 @@ def station_delays(stop_id):
 
     except Exception as e:
         logger.error(f"Error getting station delays: {e}")
-        return jsonify({'error': 'Database error'}), 500
+        return jsonify({'error': 'Villa í gagnagrunni'}), 500
     finally:
         return_db_connection(conn)
 
@@ -644,13 +644,13 @@ def station_detail(stop_id):
 
         station = cursor.fetchone()
         if not station:
-            return "Station not found", 404
+            return "Stöð fannst ekki", 404
 
         return render_template('station_detail.html', station=dict(station))
 
     except Exception as e:
         logger.error(f"Error getting station detail: {e}")
-        return "Database error", 500
+        return "Villa í gagnagrunni", 500
     finally:
         return_db_connection(conn)
 
@@ -687,7 +687,7 @@ def speed_data():
 
     except Exception as e:
         logger.error(f"Error getting speed data: {e}")
-        return jsonify({'error': 'Database error'}), 500
+        return jsonify({'error': 'Villa í gagnagrunni'}), 500
     finally:
         return_db_connection(conn)
 
@@ -730,7 +730,7 @@ def route_stats():
 
     except Exception as e:
         logger.error(f"Error getting route stats: {e}")
-        return jsonify({'error': 'Database error'}), 500
+        return jsonify({'error': 'Villa í gagnagrunni'}), 500
     finally:
         return_db_connection(conn)
 
@@ -789,11 +789,130 @@ def system_stats():
             'recent_records': 0,
             'recent_delays': 0,
             'latest_update': None,
-            'error': 'Database not initialized'
+            'error': 'Gagnagrunnur ekki tilbúinn'
         })
     except Exception as e:
         logger.error(f"Error getting system stats: {e}")
-        return jsonify({'error': 'Database error'}), 500
+        return jsonify({'error': 'Villa í gagnagrunni'}), 500
+    finally:
+        return_db_connection(conn)
+
+@app.route('/api/analytics/station-route-pairs')
+def station_route_pairs():
+    """Get station-route pairs with most delays/earliest arrivals."""
+    hours = min(int(request.args.get('hours', 24)), 168)
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        since_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+
+        # Get most delayed station-route pairs
+        cursor.execute("""
+            SELECT
+                d.stop_id,
+                d.route_id,
+                s.stop_name,
+                r.route_short_name,
+                COUNT(*) as arrival_count,
+                AVG(d.delay_seconds) as avg_delay_seconds,
+                MAX(d.delay_seconds) as max_delay_seconds,
+                COUNT(CASE WHEN d.delay_seconds > 300 THEN 1 END) as very_late_count
+            FROM bus_delays d
+            JOIN gtfs_stops s ON d.stop_id = s.stop_id
+            JOIN gtfs_versions vs ON s.version_id = vs.id AND vs.is_active = TRUE
+            JOIN gtfs_routes r ON d.route_id = r.route_id
+            JOIN gtfs_versions vr ON r.version_id = vr.id AND vr.is_active = TRUE
+            WHERE d.recorded_at >= %s
+            GROUP BY d.stop_id, d.route_id, s.stop_name, r.route_short_name
+            HAVING COUNT(*) >= 3
+            ORDER BY avg_delay_seconds DESC
+            LIMIT 10
+        """, (since_time,))
+
+        most_delayed = cursor.fetchall()
+
+        # Get earliest station-route pairs (most ahead of schedule)
+        cursor.execute("""
+            SELECT
+                d.stop_id,
+                d.route_id,
+                s.stop_name,
+                r.route_short_name,
+                COUNT(*) as arrival_count,
+                AVG(d.delay_seconds) as avg_delay_seconds,
+                MIN(d.delay_seconds) as min_delay_seconds,
+                COUNT(CASE WHEN d.delay_seconds < -60 THEN 1 END) as very_early_count
+            FROM bus_delays d
+            JOIN gtfs_stops s ON d.stop_id = s.stop_id
+            JOIN gtfs_versions vs ON s.version_id = vs.id AND vs.is_active = TRUE
+            JOIN gtfs_routes r ON d.route_id = r.route_id
+            JOIN gtfs_versions vr ON r.version_id = vr.id AND vr.is_active = TRUE
+            WHERE d.recorded_at >= %s
+            GROUP BY d.stop_id, d.route_id, s.stop_name, r.route_short_name
+            HAVING COUNT(*) >= 3
+            ORDER BY avg_delay_seconds ASC
+            LIMIT 10
+        """, (since_time,))
+
+        most_early = cursor.fetchall()
+
+        return jsonify({
+            'most_delayed': [dict(row) for row in most_delayed],
+            'most_early': [dict(row) for row in most_early]
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting station-route pairs: {e}")
+        return jsonify({'error': 'Villa í gagnagrunni'}), 500
+    finally:
+        return_db_connection(conn)
+
+@app.route('/api/analytics/delay-histogram')
+def delay_histogram():
+    """Get delay histogram data by routes."""
+    hours = min(int(request.args.get('hours', 24)), 168)
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        since_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+
+        # Get delay distribution for all routes
+        cursor.execute("""
+            SELECT
+                d.route_id,
+                r.route_short_name,
+                r.route_long_name,
+                COUNT(*) as total_arrivals,
+                -- Histogram bins (in seconds): <-120, -120 to -60, -60 to 0, 0 to 60, 60 to 180, 180 to 300, >300
+                COUNT(CASE WHEN d.delay_seconds < -120 THEN 1 END) as very_early,
+                COUNT(CASE WHEN d.delay_seconds >= -120 AND d.delay_seconds < -60 THEN 1 END) as early,
+                COUNT(CASE WHEN d.delay_seconds >= -60 AND d.delay_seconds < 0 THEN 1 END) as slightly_early,
+                COUNT(CASE WHEN d.delay_seconds >= 0 AND d.delay_seconds <= 60 THEN 1 END) as on_time,
+                COUNT(CASE WHEN d.delay_seconds > 60 AND d.delay_seconds <= 180 THEN 1 END) as slightly_late,
+                COUNT(CASE WHEN d.delay_seconds > 180 AND d.delay_seconds <= 300 THEN 1 END) as late,
+                COUNT(CASE WHEN d.delay_seconds > 300 THEN 1 END) as very_late,
+                AVG(d.delay_seconds) as avg_delay,
+                STDDEV(d.delay_seconds) as delay_stddev
+            FROM bus_delays d
+            JOIN gtfs_routes r ON d.route_id = r.route_id
+            JOIN gtfs_versions v ON r.version_id = v.id AND v.is_active = TRUE
+            WHERE d.recorded_at >= %s
+            GROUP BY d.route_id, r.route_short_name, r.route_long_name
+            HAVING COUNT(*) >= 5
+            ORDER BY total_arrivals DESC
+        """, (since_time,))
+
+        histogram_data = cursor.fetchall()
+
+        return jsonify([dict(row) for row in histogram_data])
+
+    except Exception as e:
+        logger.error(f"Error getting delay histogram: {e}")
+        return jsonify({'error': 'Villa í gagnagrunni'}), 500
     finally:
         return_db_connection(conn)
 

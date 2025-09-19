@@ -99,3 +99,51 @@ body {
         margin-top: 0.5rem;
     }
 }
+
+/* Histogram visualization styles */
+.histogram-bar {
+    display: flex;
+    height: 20px;
+    width: 100%;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+}
+
+.bar {
+    height: 100%;
+    display: inline-block;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.bar:hover {
+    opacity: 0.8;
+}
+
+.bar-very-early {
+    background-color: #0d6efd;
+}
+
+.bar-early {
+    background-color: #20c997;
+}
+
+.bar-slightly-early {
+    background-color: #6fcf97;
+}
+
+.bar-on-time {
+    background-color: #28a745;
+}
+
+.bar-slightly-late {
+    background-color: #ffc107;
+}
+
+.bar-late {
+    background-color: #fd7e14;
+}
+
+.bar-very-late {
+    background-color: #dc3545;
+}

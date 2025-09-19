@@ -56,13 +56,13 @@ class StationSearch {
             this.displaySearchResults(stations);
         } catch (error) {
             console.error('Search error:', error);
-            this.showError('Failed to search stations');
+            this.showError('Gat ekki leitað að stöðvum');
         }
     }
 
     displaySearchResults(stations) {
         if (stations.length === 0) {
-            this.searchResults.innerHTML = '<div class="list-group-item">No stations found</div>';
+            this.searchResults.innerHTML = '<div class="list-group-item">Engar stöðvar fundust</div>';
         } else {
             this.searchResults.innerHTML = stations.map(station => `
                 <div class="list-group-item list-group-item-action" data-station-id="${station.stop_id}">
@@ -91,11 +91,11 @@ class StationSearch {
 
     async findNearbyStations() {
         if (!navigator.geolocation) {
-            this.showError('Geolocation is not supported by this browser');
+            this.showError('Staðsetning er ekki studd í þessum vafra');
             return;
         }
 
-        this.findNearbyButton.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Finding...';
+        this.findNearbyButton.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Leita...';
         this.findNearbyButton.disabled = true;
 
         navigator.geolocation.getCurrentPosition(
@@ -110,15 +110,15 @@ class StationSearch {
                     this.displayNearbyResults(stations);
                 } catch (error) {
                     console.error('Nearby search error:', error);
-                    this.showError('Failed to find nearby stations');
+                    this.showError('Gat ekki fundið nálægar stöðvar');
                 } finally {
-                    this.findNearbyButton.innerHTML = '<i class="bi bi-geo-alt"></i> Use My Location';
+                    this.findNearbyButton.innerHTML = '<i class="bi bi-geo-alt"></i> Nota staðsetningu mína';
                     this.findNearbyButton.disabled = false;
                 }
             },
             (error) => {
                 console.error('Geolocation error:', error);
-                this.showError('Unable to get your location');
+                this.showError('Gat ekki náð í staðsetningu þína');
                 this.findNearbyButton.innerHTML = '<i class="bi bi-geo-alt"></i> Use My Location';
                 this.findNearbyButton.disabled = false;
             }
@@ -127,7 +127,7 @@ class StationSearch {
 
     displayNearbyResults(stations) {
         if (stations.length === 0) {
-            this.nearbyResults.innerHTML = '<div class="list-group-item">No nearby stations found</div>';
+            this.nearbyResults.innerHTML = '<div class="list-group-item">Engar nálægar stöðvar fundust</div>';
         } else {
             this.nearbyResults.innerHTML = stations.map(station => `
                 <div class="list-group-item list-group-item-action" data-station-id="${station.stop_id}">
@@ -135,8 +135,8 @@ class StationSearch {
                         <div>
                             <h6 class="mb-1">${station.stop_name}</h6>
                             <small class="text-muted">
-                                ${Math.round(station.distance)}m away
-                                ${station.stop_code ? `• Code: ${station.stop_code}` : ''}
+                                ${Math.round(station.distance)}m í burtu
+                                ${station.stop_code ? `• Kóði: ${station.stop_code}` : ''}
                             </small>
                         </div>
                         <i class="bi bi-arrow-right"></i>
@@ -160,7 +160,7 @@ class StationSearch {
         const modalBody = document.getElementById('stationModalBody');
         const viewDetailLink = document.getElementById('viewStationDetail');
 
-        modalTitle.textContent = 'Loading...';
+        modalTitle.textContent = 'Hleður...';
         modalBody.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
         viewDetailLink.href = `/station/${stationId}`;
 
@@ -177,7 +177,7 @@ class StationSearch {
             this.renderStationModal(data, modalBody);
         } catch (error) {
             console.error('Station details error:', error);
-            modalBody.innerHTML = '<div class="alert alert-danger">Failed to load station details</div>';
+            modalBody.innerHTML = '<div class="alert alert-danger">Gat ekki hlaðið upplýsingar um stöð</div>';
         }
     }
 
@@ -185,14 +185,14 @@ class StationSearch {
         const { delays, stats } = data;
 
         if (stats.length === 0) {
-            container.innerHTML = '<div class="alert alert-info">No delay data available for this station.</div>';
+            container.innerHTML = '<div class="alert alert-info">Engin töfugjögn til staðar fyrir þessa stöð.</div>';
             return;
         }
 
         let html = '<div class="row">';
 
         // Route statistics
-        html += '<div class="col-md-6"><h6>Route Statistics (24h)</h6>';
+        html += '<div class="col-md-6"><h6>Leiðartölfræði (24 klst)</h6>';
         stats.forEach(stat => {
             const onTimePercent = Math.round((stat.total_arrivals - stat.late_arrivals - stat.early_arrivals) / stat.total_arrivals * 100);
             const avgDelayMin = Math.round(stat.avg_delay / 60);
@@ -202,16 +202,16 @@ class StationSearch {
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="route-badge">${stat.route_short_name || stat.route_id}</span>
                             <div class="text-end">
-                                <small class="text-muted">${stat.total_arrivals} arrivals</small><br>
+                                <small class="text-muted">${stat.total_arrivals} komur</small><br>
                                 <small class="delay-${avgDelayMin > 0 ? 'positive' : avgDelayMin < 0 ? 'negative' : 'neutral'}">
-                                    ${avgDelayMin > 0 ? '+' : ''}${avgDelayMin}min avg
+                                    ${avgDelayMin > 0 ? '+' : ''}${avgDelayMin} mín meðal
                                 </small>
                             </div>
                         </div>
                         <div class="progress" style="height: 4px;">
                             <div class="progress-bar bg-success" style="width: ${onTimePercent}%"></div>
                         </div>
-                        <small class="text-muted">${onTimePercent}% on time</small>
+                        <small class="text-muted">${onTimePercent}% á réttum tíma</small>
                     </div>
                 </div>
             `;
@@ -219,7 +219,7 @@ class StationSearch {
         html += '</div>';
 
         // Recent delays
-        html += '<div class="col-md-6"><h6>Recent Arrivals</h6>';
+        html += '<div class="col-md-6"><h6>Nýlegar komur</h6>';
         if (delays.length > 0) {
             html += '<div style="max-height: 300px; overflow-y: auto;">';
             delays.slice(0, 10).forEach(delay => {
@@ -232,14 +232,14 @@ class StationSearch {
                             <small class="text-muted">${arrivalTime}</small>
                         </div>
                         <span class="delay-${delayMin > 0 ? 'positive' : delayMin < 0 ? 'negative' : 'neutral'}">
-                            ${delayMin > 0 ? '+' : ''}${delayMin}min
+                            ${delayMin > 0 ? '+' : ''}${delayMin} mín
                         </span>
                     </div>
                 `;
             });
             html += '</div>';
         } else {
-            html += '<div class="alert alert-info">No recent delay data available.</div>';
+            html += '<div class="alert alert-info">Engin nýleg töfugjögn til staðar.</div>';
         }
         html += '</div></div>';
 
@@ -264,27 +264,27 @@ class StationSearch {
                 <div class="row text-center">
                     <div class="col-6 mb-2">
                         <strong class="text-primary">${formatNumber(stats.total_records)}</strong><br>
-                        <small class="text-muted">Total Records</small>
+                        <small class="text-muted">Heildarskráningar</small>
                     </div>
                     <div class="col-6 mb-2">
                         <strong class="text-success">${stats.unique_routes}</strong><br>
-                        <small class="text-muted">Routes</small>
+                        <small class="text-muted">Leiðir</small>
                     </div>
                     <div class="col-6 mb-2">
                         <strong class="text-warning">${formatNumber(stats.recent_records)}</strong><br>
-                        <small class="text-muted">Last 24h</small>
+                        <small class="text-muted">Síðustu 24 klst</small>
                     </div>
                     <div class="col-6 mb-2">
                         <strong class="text-info">${formatNumber(stats.recent_delays)}</strong><br>
-                        <small class="text-muted">Recent Delays</small>
+                        <small class="text-muted">Nýlegar tafir</small>
                     </div>
                 </div>
                 <hr>
-                <small class="text-muted">Last update: ${lastUpdate}</small>
+                <small class="text-muted">Síðasta uppfærsla: ${lastUpdate}</small>
             `;
         } catch (error) {
             console.error('System stats error:', error);
-            this.systemStats.innerHTML = '<div class="alert alert-warning">Unable to load system stats</div>';
+            this.systemStats.innerHTML = '<div class="alert alert-warning">Gat ekki hlaðið kerfistölfræði</div>';
         }
     }
 
