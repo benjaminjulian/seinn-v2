@@ -102,6 +102,9 @@ const TRANSLATIONS = {
         STATIONS_AWAY: "stations away",
         ARRIVING_IN: "Arriving in",
         ARRIVING_NOW: "Arriving now",
+        LATE_WORD: "late",
+        EARLY_WORD: "early",
+        AT_STOP: "at stop",
         AVG_DELAY_LABEL: "Avg delay:",
         EARLY_ARRIVAL: "Early:",
 
@@ -253,6 +256,9 @@ const TRANSLATIONS = {
         STATIONS_AWAY: "stöðvar í burtu",
         ARRIVING_IN: "Kemur eftir",
         ARRIVING_NOW: "Kemur núna",
+        LATE_WORD: "seinn",
+        EARLY_WORD: "snemma",
+        AT_STOP: "á stoppið",
         AVG_DELAY_LABEL: "Meðaltöf:",
         EARLY_ARRIVAL: "Fyrirtækni:",
 

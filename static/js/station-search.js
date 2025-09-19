@@ -245,24 +245,29 @@ class StationSearch {
                 return;
             }
 
-            const delayMin = Math.round((bus.latest_delay_seconds || 0) / 60);
-            const delayClass = delayMin > 0 ? 'positive' : delayMin < 0 ? 'negative' : 'neutral';
+            // Calculate delay in minutes and seconds
+            const totalDelaySeconds = Math.abs(bus.latest_delay_seconds || 0);
+            const delayMinutes = Math.floor(totalDelaySeconds / 60);
+            const delaySeconds = totalDelaySeconds % 60;
+            const isLate = (bus.latest_delay_seconds || 0) > 0;
+            const isEarly = (bus.latest_delay_seconds || 0) < 0;
 
-            // Build direction info
-            let directionInfo = '';
-            if (bus.trip_headsign) {
-                directionInfo = `<div><small class="text-muted">→ ${bus.trip_headsign}</small></div>`;
-            } else if (bus.direction_id !== null) {
-                directionInfo = `<div><small class="text-muted">→ ${t('DIRECTION')} ${bus.direction_id}</small></div>`;
+            // Format delay text
+            let delayText = '';
+            if (totalDelaySeconds > 0) {
+                const delayTimeFormat = `${delayMinutes}:${delaySeconds.toString().padStart(2, '0')}`;
+                const delayWord = isLate ? t('LATE_WORD') : t('EARLY_WORD');
+                delayText = `${delayTimeFormat} ${delayWord}`;
+            }
+
+            // Build stop info
+            let stopInfo = '';
+            if (bus.delay_measured_at_stop) {
+                stopInfo = `<small class="text-muted">${t('AT_STOP')} ${bus.delay_measured_at_stop}</small>`;
             }
 
             // Build arrival info
             let arrivalInfo = '';
-            if (bus.stations_away !== null && bus.stations_away >= 0) {
-                const stationsText = bus.stations_away === 1 ? t('STATION_AWAY') : t('STATIONS_AWAY');
-                arrivalInfo += `<small class="text-muted">${bus.stations_away} ${stationsText}</small><br>`;
-            }
-
             if (bus.estimated_arrival) {
                 try {
                     const arrivalTime = new Date(bus.estimated_arrival);
@@ -270,44 +275,28 @@ class StationSearch {
                     const minutesUntil = Math.round((arrivalTime - now) / (1000 * 60));
 
                     if (minutesUntil > 0) {
-                        arrivalInfo += `<small class="text-muted">${t('ARRIVING_IN')} ${minutesUntil} ${t('MINUTES_ABBREV')}</small><br>`;
+                        arrivalInfo = `<small class="text-muted">${t('ARRIVING_IN')} ${minutesUntil} ${t('MINUTES_ABBREV')}</small>`;
                     } else {
-                        arrivalInfo += `<small class="text-muted">${t('ARRIVING_NOW')}</small><br>`;
+                        arrivalInfo = `<small class="text-muted">${t('ARRIVING_NOW')}</small>`;
                     }
                 } catch (e) {
                     // Invalid date, skip arrival time
                 }
             }
 
-            // Build delay measurement info
-            let delayMeasurementInfo = '';
-            if (bus.delay_measured_at_stop && bus.latest_delay_seconds !== null) {
-                delayMeasurementInfo = `<small class="text-muted">${t('MEASURED_AT')}: ${bus.delay_measured_at_stop}</small>`;
-            }
-
             html += `
                 <div class="result-item">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="flex-grow-1">
-                            <div class="d-flex align-items-center mb-1">
+                            <div class="mb-1">
                                 <span class="route-badge">${bus.route_short_name || bus.route_id}</span>
-                                <small class="text-muted ms-2">${bus.route_long_name || ''}</small>
+                                ${delayText ? `<span class="ms-2">${delayText}</span>` : ''}
                             </div>
-                            ${directionInfo}
-                            <div class="mt-1">
-                                ${arrivalInfo}
-                            </div>
+                            ${bus.trip_headsign ? `<div class="fw-bold mb-1">${bus.trip_headsign}</div>` : ''}
+                            ${stopInfo}
                         </div>
                         <div class="text-end">
-                            <div class="delay-${delayClass} fw-bold mb-1">
-                                ${delayMin > 0 ? '+' : ''}${delayMin} ${t('MINUTES_ABBREV')}
-                            </div>
-                            ${delayMeasurementInfo}
-                            <div>
-                                <small class="text-muted">
-                                    ${bus.bus_status && bus.bus_status.speed_kmh ? `${Math.round(bus.bus_status.speed_kmh)} km/h` : ''}
-                                </small>
-                            </div>
+                            ${arrivalInfo}
                         </div>
                     </div>
                 </div>

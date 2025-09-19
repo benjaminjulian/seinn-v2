@@ -622,32 +622,39 @@ def station_name_buses(station_name):
                             stations_away = None  # Bus has already passed or is at the station
 
                     # Calculate estimated arrival time
-                    if bus_data.get('latest_delay') is not None:
-                        cursor.execute("""
-                            SELECT arrival_time
-                            FROM gtfs_stop_times
-                            WHERE trip_id = %s
-                            AND version_id = (SELECT id FROM gtfs_versions WHERE is_active = TRUE LIMIT 1)
-                            AND stop_id = %s
-                        """, (representative_trip['trip_id'], target_stop['stop_id']))
+                    cursor.execute("""
+                        SELECT arrival_time
+                        FROM gtfs_stop_times
+                        WHERE trip_id = %s
+                        AND version_id = (SELECT id FROM gtfs_versions WHERE is_active = TRUE LIMIT 1)
+                        AND stop_id = %s
+                    """, (representative_trip['trip_id'], target_stop['stop_id']))
 
-                        scheduled_time = cursor.fetchone()
-                        if scheduled_time:
-                            from datetime import datetime, timedelta
-                            try:
-                                # Parse GTFS time format (HH:MM:SS)
-                                time_parts = scheduled_time['arrival_time'].split(':')
-                                hours = int(time_parts[0]) % 24  # Handle 24+ hour times
-                                minutes = int(time_parts[1])
-                                seconds = int(time_parts[2])
+                    scheduled_time = cursor.fetchone()
+                    if scheduled_time:
+                        from datetime import datetime, timedelta
+                        try:
+                            # Parse GTFS time format (HH:MM:SS)
+                            time_parts = scheduled_time['arrival_time'].split(':')
+                            hours = int(time_parts[0]) % 24  # Handle 24+ hour times
+                            minutes = int(time_parts[1])
+                            seconds = int(time_parts[2])
 
-                                # Create today's datetime with the scheduled time
-                                today = datetime.now().replace(hour=hours, minute=minutes, second=seconds, microsecond=0)
+                            # Create today's datetime with the scheduled time
+                            today = datetime.now().replace(hour=hours, minute=minutes, second=seconds, microsecond=0)
 
-                                # Add the delay
-                                estimated_arrival = today + timedelta(seconds=bus_data['latest_delay'])
-                            except:
-                                estimated_arrival = None
+                            # Add the delay if available
+                            delay_seconds = bus_data.get('latest_delay', 0) or 0
+                            estimated_arrival = today + timedelta(seconds=delay_seconds)
+
+                            # Only include buses arriving within the next hour
+                            now = datetime.now()
+                            minutes_until_arrival = (estimated_arrival - now).total_seconds() / 60
+                            if minutes_until_arrival < 0 or minutes_until_arrival > 60:
+                                continue  # Skip this bus - not arriving within the next hour
+
+                        except:
+                            continue  # Skip if we can't calculate arrival time
 
                     approaching_buses.append({
                         'route_id': route['route_id'],
