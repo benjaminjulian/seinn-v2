@@ -2,7 +2,6 @@ class StationSearch {
     constructor() {
         this.searchInput = document.getElementById('stationSearch');
         this.searchResults = document.getElementById('searchResults');
-        this.clearButton = document.getElementById('clearSearch');
         this.findNearbyButton = document.getElementById('findNearby');
         this.nearbyResults = document.getElementById('nearbyResults');
         this.stationDetails = document.getElementById('stationDetails');
@@ -27,12 +26,6 @@ class StationSearch {
             }
         });
 
-        // Clear search
-        this.clearButton.addEventListener('click', () => {
-            this.searchInput.value = '';
-            this.hideSearchResults();
-            this.searchInput.focus();
-        });
 
         // Find nearby stations
         this.findNearbyButton.addEventListener('click', () => {

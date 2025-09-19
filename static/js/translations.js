@@ -13,6 +13,7 @@ const TRANSLATIONS = {
         // Main page - Station search
         PAGE_TITLE_STATION_SEARCH: "Station Search - Strætó Monitor",
         STATION_SEARCH_TITLE: "Find Bus Station",
+        MAIN_QUESTION: "Is the bus running late?",
         SEARCH_BY_NAME: "Search by name",
         SEARCH_PLACEHOLDER: "Enter station name...",
         FIND_NEARBY_STATIONS: "Find nearby stations",
@@ -157,6 +158,7 @@ const TRANSLATIONS = {
         // Main page - Station search
         PAGE_TITLE_STATION_SEARCH: "Stöðvaleit - Strætó Vaktar",
         STATION_SEARCH_TITLE: "Finna Strætisvagnsstöð",
+        MAIN_QUESTION: "Er strætó seinn?",
         SEARCH_BY_NAME: "Leit eftir nafni",
         SEARCH_PLACEHOLDER: "Sláðu inn nafn stöðvar...",
         FIND_NEARBY_STATIONS: "Finna nálægar stöðvar",

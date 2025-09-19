@@ -100,15 +100,38 @@ body {
 /* Form and input styling */
 .form-control {
     border: 2px solid var(--border-gray);
-    border-radius: 8px;
+    border-radius: 0 8px 8px 0;
     padding: 0.75rem;
     font-size: 1rem;
     margin-bottom: 1rem;
+    border-left: none;
 }
 
 .form-control:focus {
     border-color: var(--primary-red);
     box-shadow: 0 0 0 0.2rem rgba(178, 39, 45, 0.25);
+    border-left: none;
+}
+
+.input-group .btn {
+    border-radius: 8px 0 0 8px;
+    border: 2px solid var(--secondary-yellow);
+    border-right: none;
+    background-color: var(--secondary-yellow);
+    color: var(--black);
+    padding: 0.75rem;
+}
+
+.input-group .btn:hover {
+    background-color: #e6c426;
+    border-color: #e6c426;
+    color: var(--black);
+}
+
+.input-group .btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(249, 215, 47, 0.25);
+    background-color: var(--secondary-yellow);
+    border-color: var(--secondary-yellow);
 }
 
 .btn-primary {

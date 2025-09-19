@@ -7,19 +7,15 @@
 {% block content %}
 <div class="main-container">
     <div class="search-container">
-        <h1 class="search-title" data-translate="STATION_SEARCH_TITLE">Find Bus Station</h1>
+        <h1 class="search-title" data-translate="MAIN_QUESTION">Er strætó seinn?</h1>
 
         <div class="input-group mb-3">
+            <button class="btn btn-success" type="button" id="findNearby">
+                <i class="bi bi-geo-alt"></i>
+            </button>
             <input type="text" id="stationSearch" class="form-control form-control-lg"
                    data-translate-placeholder="SEARCH_PLACEHOLDER" placeholder="Enter station name..." autocomplete="off">
-            <button class="btn btn-outline-secondary" type="button" id="clearSearch">
-                <i class="bi bi-x-circle"></i>
-            </button>
         </div>
-
-        <button class="btn btn-success btn-lg mb-3" id="findNearby">
-            <i class="bi bi-geo-alt"></i> <span data-translate="USE_MY_LOCATION">Use my location</span>
-        </button>
     </div>
 
     <!-- Search Results -->
