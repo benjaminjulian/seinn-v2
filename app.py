@@ -167,12 +167,37 @@ def database_status():
         for key, value in status_info.items():
             html += f"<li><strong>{key}:</strong> {value}</li>"
         html += "</ul>"
-        html += '<p><a href="/init-db">Initialize Database</a> | <a href="/">Home</a></p>'
+        html += '<p><a href="/init-db">Initialize Database</a> | <a href="/test-monitor">Test Monitor</a> | <a href="/">Home</a></p>'
 
         return html, 200
 
     except Exception as e:
         return f"Database connection failed: {str(e)}", 500
+
+@app.route('/test-monitor')
+def test_monitor():
+    """Test the bus monitoring functionality once."""
+    try:
+        database_url = os.environ.get('DATABASE_URL')
+        if not database_url:
+            return "DATABASE_URL not configured", 500
+
+        from bus_monitor_pg import BusMonitor
+        monitor = BusMonitor(database_url)
+
+        # Run one monitoring cycle
+        success = monitor.run_once()
+
+        if success:
+            return "✅ Bus monitoring test completed successfully", 200
+        else:
+            return "❌ Bus monitoring test failed", 500
+
+    except Exception as e:
+        logger.error(f"Monitor test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Monitor test failed: {str(e)}", 500
 
 @app.route('/api/stations/search')
 def search_stations():

@@ -875,17 +875,28 @@ class BusMonitor:
     def run_continuous(self, interval: int = 15):
         """Run continuous monitoring with specified interval in seconds."""
         logger.info(f"Starting continuous monitoring (interval: {interval}s)")
+        logger.info(f"Database URL configured: {'Yes' if self.database_url else 'No'}")
 
+        iteration = 0
         while True:
             try:
-                self.run_once()
+                iteration += 1
+                logger.info(f"Starting monitoring iteration #{iteration}")
+                success = self.run_once()
+                if success:
+                    logger.info(f"Iteration #{iteration} completed successfully")
+                else:
+                    logger.warning(f"Iteration #{iteration} failed")
+
                 logger.info(f"Sleeping for {interval} seconds...")
                 time.sleep(interval)
             except KeyboardInterrupt:
                 logger.info("Monitoring stopped by user")
                 break
             except Exception as e:
-                logger.error(f"Unexpected error: {e}")
+                logger.error(f"Unexpected error in iteration #{iteration}: {e}")
+                import traceback
+                traceback.print_exc()
                 logger.info(f"Continuing after {interval} seconds...")
                 time.sleep(interval)
 
@@ -916,4 +927,15 @@ def main():
         monitor.run_continuous(args.interval)
 
 if __name__ == "__main__":
-    main()
+    print("Starting Straeto Bus Monitor...")
+    print(f"DATABASE_URL configured: {'Yes' if os.environ.get('DATABASE_URL') else 'No'}")
+
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Bus monitor stopped by user")
+    except Exception as e:
+        print(f"Bus monitor failed: {e}")
+        import traceback
+        traceback.print_exc()
+        exit(1)
