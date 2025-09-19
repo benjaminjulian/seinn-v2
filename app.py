@@ -501,10 +501,9 @@ def station_name_buses(station_name):
             WHERE v.is_active = TRUE
             AND (
                 LOWER(s.stop_name) = LOWER(%s)
-                OR unaccent(LOWER(s.stop_name)) = unaccent(LOWER(%s))
                 OR LOWER(s.stop_name) LIKE LOWER(%s)
             )
-        """, (station_name, station_name, f'%{station_name}%'))
+        """, (station_name, f'%{station_name}%'))
 
         stations = cursor.fetchall()
         if not stations:
