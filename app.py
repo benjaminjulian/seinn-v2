@@ -167,7 +167,7 @@ def database_status():
         for key, value in status_info.items():
             html += f"<li><strong>{key}:</strong> {value}</li>"
         html += "</ul>"
-        html += '<p><a href="/init-db">Initialize Database</a> | <a href="/test-monitor">Test Monitor</a> | <a href="/monitor-status">Monitor Status</a> | <a href="/debug-data">Debug Data</a> | <a href="/migrate-db">Migrate DB</a> | <a href="/batch-timing">Batch Timing</a> | <a href="/">Home</a></p>'
+        html += '<p><a href="/init-db">Initialize Database</a> | <a href="/test-monitor">Test Monitor</a> | <a href="/monitor-status">Monitor Status</a> | <a href="/debug-data">Debug Data</a> | <a href="/migrate-db">Migrate DB</a> | <a href="/batch-timing">Batch Timing</a> | <a href="/stop-analysis">Stop Analysis</a> | <a href="/linking-debug">Linking Debug</a> | <a href="/">Home</a></p>'
 
         return html, 200
 
@@ -306,6 +306,185 @@ def batch_timing():
     except Exception as e:
         logger.error(f"Batch timing check failed: {e}")
         return f"Batch timing check failed: {str(e)}", 500
+
+@app.route('/stop-analysis')
+def stop_analysis():
+    """Analyze stop data in recent bus records."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Get recent records with stop information
+        cursor.execute("""
+            SELECT route, stop_id, next_stop_id, recorded_at,
+                   COUNT(*) as count
+            FROM bus_status
+            WHERE recorded_at >= NOW() - INTERVAL '1 hour'
+            GROUP BY route, stop_id, next_stop_id, recorded_at
+            ORDER BY recorded_at DESC, route, stop_id
+            LIMIT 50
+        """)
+
+        records = cursor.fetchall()
+
+        # Get overall stop statistics
+        cursor.execute("""
+            SELECT
+                COUNT(*) as total_records,
+                COUNT(*) FILTER (WHERE stop_id IS NOT NULL) as with_stop_id,
+                COUNT(*) FILTER (WHERE next_stop_id IS NOT NULL) as with_next_stop_id,
+                COUNT(DISTINCT stop_id) FILTER (WHERE stop_id IS NOT NULL) as unique_stops,
+                COUNT(DISTINCT next_stop_id) FILTER (WHERE next_stop_id IS NOT NULL) as unique_next_stops
+            FROM bus_status
+            WHERE recorded_at >= NOW() - INTERVAL '1 hour'
+        """)
+
+        stats = cursor.fetchone()
+
+        # Check for recent stop changes in linked records
+        cursor.execute("""
+            SELECT
+                curr.route,
+                prev.stop_id as prev_stop,
+                curr.stop_id as curr_stop,
+                curr.recorded_at
+            FROM bus_status curr
+            JOIN bus_status prev ON curr.linked_id = prev.id
+            WHERE curr.recorded_at >= NOW() - INTERVAL '30 minutes'
+            AND curr.stop_id IS NOT NULL
+            AND prev.stop_id IS NOT NULL
+            AND curr.stop_id != prev.stop_id
+            ORDER BY curr.recorded_at DESC
+            LIMIT 10
+        """)
+
+        recent_changes = cursor.fetchall()
+
+        return_db_connection(conn)
+
+        html = "<h1>Stop Data Analysis</h1>"
+
+        html += "<h2>Overall Statistics (Last Hour)</h2><ul>"
+        html += f"<li>Total records: {stats['total_records']}</li>"
+        html += f"<li>With stop_id: {stats['with_stop_id']}</li>"
+        html += f"<li>With next_stop_id: {stats['with_next_stop_id']}</li>"
+        html += f"<li>Unique stops: {stats['unique_stops']}</li>"
+        html += f"<li>Unique next stops: {stats['unique_next_stops']}</li>"
+        html += "</ul>"
+
+        html += f"<h2>Recent Stop Changes ({len(recent_changes)} found)</h2>"
+        if recent_changes:
+            html += "<table border='1'><tr><th>Route</th><th>Previous Stop</th><th>Current Stop</th><th>Time</th></tr>"
+            for change in recent_changes:
+                html += f"<tr><td>{change['route']}</td><td>{change['prev_stop']}</td><td>{change['curr_stop']}</td><td>{change['recorded_at']}</td></tr>"
+            html += "</table>"
+        else:
+            html += "<p>No stop changes detected in linked records (last 30 minutes)</p>"
+
+        html += "<h2>Recent Records Sample</h2>"
+        html += "<table border='1'><tr><th>Route</th><th>Stop ID</th><th>Next Stop ID</th><th>Time</th><th>Count</th></tr>"
+
+        for record in records[:20]:  # Show first 20
+            html += f"""
+                <tr>
+                    <td>{record['route']}</td>
+                    <td>{record['stop_id'] or 'NULL'}</td>
+                    <td>{record['next_stop_id'] or 'NULL'}</td>
+                    <td>{record['recorded_at']}</td>
+                    <td>{record['count']}</td>
+                </tr>
+            """
+
+        html += "</table>"
+        html += '<p><a href="/db-status">Database Status</a> | <a href="/">Home</a></p>'
+
+        return html, 200
+
+    except Exception as e:
+        logger.error(f"Stop analysis failed: {e}")
+        return f"Stop analysis failed: {str(e)}", 500
+
+@app.route('/linking-debug')
+def linking_debug():
+    """Debug the bus linking process."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Overall linking statistics
+        cursor.execute("""
+            SELECT
+                COUNT(*) as total_records,
+                COUNT(*) FILTER (WHERE linked_id IS NOT NULL) as linked_records,
+                COUNT(*) FILTER (WHERE speed_kmh IS NOT NULL) as with_speed,
+                COUNT(DISTINCT recorded_at) as unique_batches,
+                MAX(recorded_at) as latest_batch,
+                MIN(recorded_at) as earliest_batch
+            FROM bus_status
+        """)
+
+        stats = cursor.fetchone()
+
+        # Recent batch analysis
+        cursor.execute("""
+            SELECT
+                recorded_at,
+                COUNT(*) as total,
+                COUNT(*) FILTER (WHERE linked_id IS NOT NULL) as linked,
+                COUNT(*) FILTER (WHERE speed_kmh IS NOT NULL) as with_speed,
+                AVG(speed_kmh) FILTER (WHERE speed_kmh IS NOT NULL) as avg_speed
+            FROM bus_status
+            GROUP BY recorded_at
+            ORDER BY recorded_at DESC
+            LIMIT 5
+        """)
+
+        recent_batches = cursor.fetchall()
+
+        # Sample of recent records
+        cursor.execute("""
+            SELECT id, route, linked_id, speed_kmh, recorded_at
+            FROM bus_status
+            WHERE recorded_at >= (SELECT MAX(recorded_at) FROM bus_status)
+            LIMIT 10
+        """)
+
+        sample_records = cursor.fetchall()
+
+        return_db_connection(conn)
+
+        html = "<h1>Bus Linking Debug</h1>"
+
+        html += "<h2>Overall Statistics</h2><ul>"
+        html += f"<li>Total records: {stats['total_records']}</li>"
+        html += f"<li>Linked records: {stats['linked_records']} ({(stats['linked_records']/stats['total_records']*100) if stats['total_records'] > 0 else 0:.1f}%)</li>"
+        html += f"<li>With speed: {stats['with_speed']}</li>"
+        html += f"<li>Unique batches: {stats['unique_batches']}</li>"
+        html += f"<li>Latest batch: {stats['latest_batch']}</li>"
+        html += "</ul>"
+
+        html += "<h2>Recent Batches</h2>"
+        html += "<table border='1'><tr><th>Batch Time</th><th>Total</th><th>Linked</th><th>With Speed</th><th>Avg Speed</th></tr>"
+        for batch in recent_batches:
+            avg_speed = f"{batch['avg_speed']:.1f}" if batch['avg_speed'] else "N/A"
+            html += f"<tr><td>{batch['recorded_at']}</td><td>{batch['total']}</td><td>{batch['linked']}</td><td>{batch['with_speed']}</td><td>{avg_speed}</td></tr>"
+        html += "</table>"
+
+        html += "<h2>Latest Records Sample</h2>"
+        html += "<table border='1'><tr><th>ID</th><th>Route</th><th>Linked ID</th><th>Speed</th><th>Time</th></tr>"
+        for record in sample_records:
+            speed = f"{record['speed_kmh']:.1f}" if record['speed_kmh'] else "NULL"
+            linked = record['linked_id'] or "NULL"
+            html += f"<tr><td>{record['id']}</td><td>{record['route']}</td><td>{linked}</td><td>{speed}</td><td>{record['recorded_at']}</td></tr>"
+        html += "</table>"
+
+        html += '<p><a href="/db-status">Database Status</a> | <a href="/">Home</a></p>'
+
+        return html, 200
+
+    except Exception as e:
+        logger.error(f"Linking debug failed: {e}")
+        return f"Linking debug failed: {str(e)}", 500
 
 @app.route('/api/stations/search')
 def search_stations():

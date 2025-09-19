@@ -473,7 +473,7 @@ class BusMonitor:
                         continue
                     used_prev.add(pid)
                     used_curr.add(cid)
-                    chosen_updates.append((cid, pid, e["speed"]))
+                    chosen_updates.append((pid, e["speed"], cid))
 
             # Apply updates
             # Clean slate for current batch
@@ -483,9 +483,23 @@ class BusMonitor:
 
             # Write chosen matches
             if chosen_updates:
+                logger.info(f"About to apply {len(chosen_updates)} updates")
+                logger.info(f"Sample update: prev_id={chosen_updates[0][0]}, speed={chosen_updates[0][1]:.1f}, curr_id={chosen_updates[0][2]}")
+
                 cursor.executemany("""UPDATE bus_status
                                       SET linked_id = %s, speed_kmh = %s
                                       WHERE id = %s""", chosen_updates)
+
+                # Verify the updates were applied
+                cursor.execute("""SELECT COUNT(*) FROM bus_status
+                                  WHERE recorded_at = %s AND linked_id IS NOT NULL""", (latest_batch,))
+                actual_updates = cursor.fetchone()[0]
+                logger.info(f"Updates applied: {actual_updates} records now have linked_id")
+
+                if actual_updates != len(chosen_updates):
+                    logger.warning(f"Mismatch: tried to update {len(chosen_updates)} but only {actual_updates} were updated")
+            else:
+                logger.info("No updates to apply")
 
             conn.commit()
 
@@ -753,6 +767,24 @@ class BusMonitor:
             """, (latest_batch, prev_batch))
 
             arrivals = cursor.fetchall()
+
+            # Debug: check what stop data we have
+            cursor.execute("""
+                SELECT
+                    COUNT(*) as total_linked,
+                    COUNT(*) FILTER (WHERE curr.stop_id IS NOT NULL) as with_current_stop,
+                    COUNT(*) FILTER (WHERE prev.stop_id IS NOT NULL) as with_prev_stop,
+                    COUNT(*) FILTER (WHERE curr.stop_id IS NOT NULL AND prev.stop_id IS NOT NULL) as both_stops,
+                    COUNT(*) FILTER (WHERE curr.stop_id IS NOT NULL AND prev.stop_id IS NOT NULL AND curr.stop_id != prev.stop_id) as different_stops
+                FROM bus_status curr
+                JOIN bus_status prev ON curr.linked_id = prev.id
+                WHERE curr.recorded_at = %s
+                AND prev.recorded_at = %s
+            """, (latest_batch, prev_batch))
+
+            debug_info = cursor.fetchone()
+            logger.info(f"Stop change analysis: {dict(debug_info)} arrivals found: {len(arrivals)}")
+
             delays_calculated = 0
 
             # Get active GTFS version
