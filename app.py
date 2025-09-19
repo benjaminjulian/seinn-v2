@@ -10,6 +10,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Tuple
 import json
+import sys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,7 +38,24 @@ def init_db_pool():
             cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'bus_status'")
             table_exists = cursor.fetchone()[0] > 0
             if not table_exists:
-                logger.warning("Database tables not found. Please run: python init_db.py")
+                logger.warning("Database tables not found. Initializing database...")
+                try:
+                    # Initialize database directly
+                    from bus_monitor_pg import BusMonitor
+                    monitor = BusMonitor(database_url)
+                    logger.info("Database schema created successfully")
+
+                    # Try to download GTFS data
+                    logger.info("Attempting to download GTFS data...")
+                    if monitor.download_and_update_gtfs():
+                        logger.info("GTFS data loaded successfully")
+                    else:
+                        logger.warning("GTFS data download failed, but schema is ready")
+
+                except Exception as init_error:
+                    logger.error(f"Database initialization failed: {init_error}")
+                    logger.error("Web app will start but may have limited functionality")
+
         except Exception as e:
             logger.error(f"Database connection test failed: {e}")
         finally:
@@ -90,6 +108,71 @@ def health_check():
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return "Database connection failed", 503
+
+@app.route('/init-db')
+def init_database_route():
+    """Manual database initialization endpoint."""
+    try:
+        database_url = os.environ.get('DATABASE_URL')
+        if not database_url:
+            return "DATABASE_URL not configured", 500
+
+        from bus_monitor_pg import BusMonitor
+        monitor = BusMonitor(database_url)
+        logger.info("Database schema initialized via web endpoint")
+
+        # Try to download GTFS data
+        if monitor.download_and_update_gtfs():
+            return "Database initialized successfully with GTFS data", 200
+        else:
+            return "Database initialized but GTFS download failed", 200
+
+    except Exception as e:
+        logger.error(f"Manual database initialization failed: {e}")
+        return f"Database initialization failed: {str(e)}", 500
+
+@app.route('/db-status')
+def database_status():
+    """Show database status for debugging."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        status_info = {}
+
+        # Check each table
+        tables = ['bus_status', 'gtfs_stops', 'gtfs_routes', 'gtfs_versions', 'bus_delays']
+        for table in tables:
+            try:
+                cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                count = cursor.fetchone()[0]
+                status_info[table] = f"✅ {count} records"
+            except psycopg2.errors.UndefinedTable:
+                status_info[table] = "❌ Table does not exist"
+            except Exception as e:
+                status_info[table] = f"⚠️ Error: {str(e)}"
+
+        # Check for active GTFS version
+        try:
+            cursor.execute("SELECT COUNT(*) FROM gtfs_versions WHERE is_active = TRUE")
+            active_gtfs = cursor.fetchone()[0]
+            status_info['active_gtfs'] = f"✅ {active_gtfs} active GTFS version(s)" if active_gtfs > 0 else "❌ No active GTFS version"
+        except:
+            status_info['active_gtfs'] = "❌ Cannot check GTFS versions"
+
+        return_db_connection(conn)
+
+        # Format as HTML
+        html = "<h1>Database Status</h1><ul>"
+        for key, value in status_info.items():
+            html += f"<li><strong>{key}:</strong> {value}</li>"
+        html += "</ul>"
+        html += '<p><a href="/init-db">Initialize Database</a> | <a href="/">Home</a></p>'
+
+        return html, 200
+
+    except Exception as e:
+        return f"Database connection failed: {str(e)}", 500
 
 @app.route('/api/stations/search')
 def search_stations():
