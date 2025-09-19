@@ -491,10 +491,10 @@ class BusMonitor:
                                       WHERE id = %s""", chosen_updates)
 
                 # Verify the updates were applied
-                cursor.execute("""SELECT COUNT(*) FROM bus_status
+                cursor.execute("""SELECT COUNT(*) as count FROM bus_status
                                   WHERE recorded_at = %s AND linked_id IS NOT NULL""", (latest_batch,))
                 result = cursor.fetchone()
-                actual_updates = result[0] if result else 0
+                actual_updates = result["count"] if result else 0
                 logger.info(f"Updates applied: {actual_updates} records now have linked_id")
 
                 if actual_updates != len(chosen_updates):
