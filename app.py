@@ -110,27 +110,6 @@ def health_check():
         logger.error(f"Health check failed: {e}")
         return "Database connection failed", 503
 
-@app.route('/init-db')
-def init_database_route():
-    """Manual database initialization endpoint."""
-    try:
-        database_url = os.environ.get('DATABASE_URL')
-        if not database_url:
-            return "DATABASE_URL not configured", 500
-
-        from bus_monitor_pg import BusMonitor
-        monitor = BusMonitor(database_url)
-        logger.info("Database schema initialized via web endpoint")
-
-        # Try to download GTFS data
-        if monitor.download_and_update_gtfs():
-            return "Database initialized successfully with GTFS data", 200
-        else:
-            return "Database initialized but GTFS download failed", 200
-
-    except Exception as e:
-        logger.error(f"Manual database initialization failed: {e}")
-        return f"Database initialization failed: {str(e)}", 500
 
 @app.route('/db-status')
 def database_status():
@@ -168,37 +147,13 @@ def database_status():
         for key, value in status_info.items():
             html += f"<li><strong>{key}:</strong> {value}</li>"
         html += "</ul>"
-        html += '<p><a href="/init-db">Initialize Database</a> | <a href="/test-monitor">Test Monitor</a> | <a href="/monitor-status">Monitor Status</a> | <a href="/debug-data">Debug Data</a> | <a href="/migrate-db">Migrate DB</a> | <a href="/batch-timing">Batch Timing</a> | <a href="/stop-analysis">Stop Analysis</a> | <a href="/linking-debug">Linking Debug</a> | <a href="/">Home</a></p>'
+        html += '<p><a href="/monitor-status">Monitor Status</a> | <a href="/debug-data">Debug Data</a> | <a href="/batch-timing">Batch Timing</a> | <a href="/stop-analysis">Stop Analysis</a> | <a href="/linking-debug">Linking Debug</a> | <a href="/">Home</a></p>'
 
         return html, 200
 
     except Exception as e:
         return f"Database connection failed: {str(e)}", 500
 
-@app.route('/test-monitor')
-def test_monitor():
-    """Test the bus monitoring functionality once."""
-    try:
-        database_url = os.environ.get('DATABASE_URL')
-        if not database_url:
-            return "DATABASE_URL not configured", 500
-
-        from bus_monitor_pg import BusMonitor
-        monitor = BusMonitor(database_url)
-
-        # Run one monitoring cycle
-        success = monitor.run_once()
-
-        if success:
-            return "✅ Bus monitoring test completed successfully", 200
-        else:
-            return "❌ Bus monitoring test failed", 500
-
-    except Exception as e:
-        logger.error(f"Monitor test failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return f"Monitor test failed: {str(e)}", 500
 
 @app.route('/debug-data')
 def debug_data():
@@ -238,22 +193,6 @@ def debug_data():
         traceback.print_exc()
         return f"Debug failed: {str(e)}", 500
 
-@app.route('/migrate-db')
-def migrate_database():
-    """Migrate database to fix data type issues."""
-    try:
-        import subprocess
-        result = subprocess.run(['python', 'migrate_db.py'],
-                              capture_output=True, text=True, cwd='.')
-
-        if result.returncode == 0:
-            return f"✅ Database migration completed successfully<br><pre>{result.stdout}</pre>", 200
-        else:
-            return f"❌ Database migration failed<br><pre>{result.stderr}</pre>", 500
-
-    except Exception as e:
-        logger.error(f"Migration failed: {e}")
-        return f"Migration failed: {str(e)}", 500
 
 @app.route('/batch-timing')
 def batch_timing():
@@ -931,46 +870,17 @@ def monitor_status():
         <li><strong>Database:</strong> {'✅ Configured' if status['database_configured'] else '❌ Not configured'}</li>
     </ul>
     <p>
-        <a href="/start-monitor">Start Monitor</a> |
-        <a href="/stop-monitor">Stop Monitor</a> |
         <a href="/db-status">Database Status</a> |
         <a href="/">Home</a>
     </p>
     """
     return html, 200
 
-@app.route('/start-monitor')
-def start_monitor():
-    """Start the background monitor."""
-    try:
-        from background_monitor import background_monitor
-        background_monitor.start()
-        return "✅ Background monitor started", 200
-    except Exception as e:
-        logger.error(f"Failed to start background monitor: {e}")
-        return f"❌ Failed to start monitor: {str(e)}", 500
-
-@app.route('/stop-monitor')
-def stop_monitor():
-    """Stop the background monitor."""
-    try:
-        from background_monitor import background_monitor
-        background_monitor.stop()
-        return "✅ Background monitor stopped", 200
-    except Exception as e:
-        logger.error(f"Failed to stop background monitor: {e}")
-        return f"❌ Failed to stop monitor: {str(e)}", 500
 
 if __name__ == '__main__':
     init_db_pool()
 
-    # Start background monitoring if in production
-    if not app.debug:
-        try:
-            from background_monitor import background_monitor
-            background_monitor.start()
-            logger.info("Background bus monitoring started")
-        except Exception as e:
-            logger.error(f"Failed to start background monitoring: {e}")
+    # Note: Background monitoring is automatically started by gunicorn.conf.py when running in production
+    # This block only runs when testing locally with `python app.py`
 
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)

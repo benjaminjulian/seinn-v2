@@ -21,7 +21,7 @@ class BackgroundBusMonitor:
     def start(self):
         """Start the background monitoring thread."""
         if self.running:
-            logger.warning("Background monitor already running")
+            logger.warning("Background monitor already running in this process")
             return
 
         if not self.database_url:
