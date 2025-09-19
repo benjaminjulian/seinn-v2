@@ -29,6 +29,21 @@ def init_db_pool():
     try:
         db_pool = SimpleConnectionPool(1, 20, database_url)
         logger.info("Database connection pool initialized")
+
+        # Test connection and check if tables exist
+        conn = db_pool.getconn()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'bus_status'")
+            table_exists = cursor.fetchone()[0] > 0
+            if not table_exists:
+                logger.warning("Database tables not found. Please run: python init_db.py")
+        except Exception as e:
+            logger.error(f"Database connection test failed: {e}")
+        finally:
+            if conn:
+                db_pool.putconn(conn)
+
     except Exception as e:
         logger.error(f"Failed to initialize database pool: {e}")
         raise
@@ -63,6 +78,19 @@ def index():
     """Main page with station search."""
     return render_template('index.html')
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Railway."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        return_db_connection(conn)
+        return "OK", 200
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return "Database connection failed", 503
+
 @app.route('/api/stations/search')
 def search_stations():
     """API endpoint for station search with autocomplete."""
@@ -89,6 +117,9 @@ def search_stations():
         stations = cursor.fetchall()
         return jsonify([dict(station) for station in stations])
 
+    except psycopg2.errors.UndefinedTable:
+        logger.error("Database tables not found. Run database initialization.")
+        return jsonify({'error': 'Database not initialized. Please contact administrator.'}), 503
     except Exception as e:
         logger.error(f"Error searching stations: {e}")
         return jsonify({'error': 'Database error'}), 500
@@ -331,14 +362,14 @@ def system_stats():
             SELECT COUNT(*) as recent_records
             FROM bus_status
             WHERE recorded_at >= %s
-        """, (recent_time.isoformat(),))
+        """, (recent_time,))
         recent_records = cursor.fetchone()['recent_records']
 
         cursor.execute("""
             SELECT COUNT(*) as recent_delays
             FROM bus_delays
             WHERE recorded_at >= %s
-        """, (recent_time.isoformat(),))
+        """, (recent_time,))
         recent_delays = cursor.fetchone()['recent_delays']
 
         # Latest update
@@ -351,9 +382,20 @@ def system_stats():
             'total_delays': total_delays,
             'recent_records': recent_records,
             'recent_delays': recent_delays,
-            'latest_update': latest_update
+            'latest_update': latest_update.isoformat() if latest_update else None
         })
 
+    except psycopg2.errors.UndefinedTable:
+        logger.error("Database tables not found. Run database initialization.")
+        return jsonify({
+            'total_records': 0,
+            'unique_routes': 0,
+            'total_delays': 0,
+            'recent_records': 0,
+            'recent_delays': 0,
+            'latest_update': None,
+            'error': 'Database not initialized'
+        })
     except Exception as e:
         logger.error(f"Error getting system stats: {e}")
         return jsonify({'error': 'Database error'}), 500

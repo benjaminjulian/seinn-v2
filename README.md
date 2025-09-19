@@ -26,14 +26,18 @@ A real-time bus monitoring system for Reykjavik's Straeto bus network with delay
    - Click "New Service" → "Database" → "PostgreSQL"
    - Note the database connection details
 
-3. **Set Environment Variables**:
-   - `DATABASE_URL`: Your PostgreSQL connection string (automatically set by Railway)
-   - `PORT`: Will be set automatically by Railway
-
-4. **Deploy**:
-   - Railway will automatically detect the `Procfile` and deploy both services
+3. **Deploy**:
+   - Railway will automatically detect the `Procfile` and deploy:
+     - `release`: Database initialization (runs once)
+     - `web`: Flask web application
+     - `worker`: Background bus data collection
+   - The database will be automatically initialized on first deploy
    - The web service will be available at your Railway-provided URL
-   - The worker service will run in the background collecting bus data
+
+4. **Verify Deployment**:
+   - Check `/health` endpoint for web service status
+   - Monitor logs for GTFS data download completion
+   - Visit your app URL to start using the station search
 
 ### Manual Setup
 
@@ -51,7 +55,7 @@ pip install -r requirements.txt
 export DATABASE_URL="postgresql://user:password@host:port/database"
 
 # Initialize database (run once)
-python bus_monitor_pg.py --force-gtfs
+python init_db.py
 
 # Test the monitoring script
 python bus_monitor_pg.py --once
