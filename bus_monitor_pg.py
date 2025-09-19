@@ -49,6 +49,11 @@ def choose_dt_s(p, c):
     rt_p, rt_c = parse_iso(p["recorded_at"]), parse_iso(c["recorded_at"])
     dt_bus = (bt_c - bt_p).total_seconds() if (bt_p and bt_c) else None
     dt_rec = rt_c - rt_p
+
+    # Sanity check: time difference should be positive and reasonable (< 2 minutes)
+    if dt_rec <= 0 or dt_rec > 120:
+        return None
+
     # prefer recorded_at only if bus delta is invalid or disagrees massively
     if dt_bus is None or dt_bus <= 0 or abs(dt_bus - dt_rec) > 60:
         return dt_rec
@@ -79,9 +84,9 @@ class BusMonitor:
                 id SERIAL PRIMARY KEY,
                 timestamp_str TEXT NOT NULL,
                 time_yymmddhhmmss TEXT NOT NULL,
-                latitude REAL NOT NULL,
-                longitude REAL NOT NULL,
-                heading REAL NOT NULL,
+                latitude DOUBLE PRECISION NOT NULL,
+                longitude DOUBLE PRECISION NOT NULL,
+                heading DOUBLE PRECISION NOT NULL,
                 fix_type INTEGER NOT NULL,
                 route TEXT NOT NULL,
                 stop_id TEXT,
@@ -90,7 +95,7 @@ class BusMonitor:
                 day_of_week INTEGER NOT NULL,
                 time_hhmm TEXT NOT NULL,
                 recorded_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                speed_kmh REAL,
+                speed_kmh DOUBLE PRECISION,
                 linked_id INTEGER,
                 UNIQUE(time_yymmddhhmmss, latitude, longitude, route)
             )
@@ -123,8 +128,8 @@ class BusMonitor:
                 version_id INTEGER NOT NULL,
                 stop_id TEXT NOT NULL,
                 stop_name TEXT,
-                stop_lat REAL,
-                stop_lon REAL,
+                stop_lat DOUBLE PRECISION,
+                stop_lon DOUBLE PRECISION,
                 zone_id TEXT,
                 stop_code TEXT,
                 FOREIGN KEY (version_id) REFERENCES gtfs_versions (id),
@@ -279,11 +284,17 @@ class BusMonitor:
         for bus in bus_elements:
             try:
                 time_str = bus.get('time')
-                lat = float(bus.get('lat'))
-                lon = float(bus.get('lon'))
-                head = float(bus.get('head'))
-                fix_type = int(bus.get('fix'))
+                if not time_str:
+                    continue
+
+                lat = float(bus.get('lat', 0))
+                lon = float(bus.get('lon', 0))
+                head = float(bus.get('head', 0))
+                fix_type = int(bus.get('fix', 0))
                 route = bus.get('route')
+                if not route:
+                    continue
+
                 stop_id = bus.get('stop') or None
                 next_stop_id = bus.get('next') or None
                 code = bus.get('code')
@@ -345,6 +356,14 @@ class BusMonitor:
                 logger.info("No previous batch found for linking")
                 return 0
 
+            # Check if previous batch is recent enough (within 1 minute)
+            time_diff = (latest_batch - prev_batch).total_seconds()
+            if time_diff > 60:
+                logger.info(f"Previous batch is {time_diff:.1f}s old, skipping speed calculation (>60s)")
+                return 0
+
+            logger.info(f"Previous batch is {time_diff:.1f}s old, proceeding with speed calculation")
+
             # Load batches
             cols = """id, latitude, longitude, heading, fix_type, route,
                       stop_id, next_stop_id, code, time_yymmddhhmmss,
@@ -365,7 +384,14 @@ class BusMonitor:
             # Convert to format expected by linking algorithm
             def convert_row(row):
                 r = dict(row)
-                r["recorded_at"] = datetime.fromtimestamp(r["recorded_at_epoch"], tz=timezone.utc).isoformat()
+                r["recorded_at"] = datetime.fromtimestamp(float(r["recorded_at_epoch"]), tz=timezone.utc).isoformat()
+                # Convert Decimal types to appropriate Python types
+                for key, value in r.items():
+                    if hasattr(value, 'to_integral_value'):  # Decimal type
+                        if key in ['id', 'fix_type', 'stop_sequence']:
+                            r[key] = int(value)
+                        else:
+                            r[key] = float(value)
                 return r
 
             prev_rows = [convert_row(r) for r in prev_rows]
@@ -388,14 +414,21 @@ class BusMonitor:
                     continue
                 for c in curr_list:
                     for p in prev_list:
-                        dt = choose_dt_s(p, c)
-                        if dt is None or dt <= 0:
+                        try:
+                            dt = choose_dt_s(p, c)
+                            if dt is None or dt <= 0:
+                                continue
+                            dist = haversine_m(float(p["latitude"]), float(p["longitude"]),
+                                             float(c["latitude"]), float(c["longitude"]))
+                            # reachability gate
+                            if dist > gate_mps * dt + R_BUFFER_M:
+                                continue
+                            spd = (dist / dt) * 3.6
+                        except (TypeError, ValueError) as e:
+                            logger.warning(f"Data type error in speed calculation: {e}")
+                            logger.warning(f"Previous: lat={p['latitude']}, lon={p['longitude']}")
+                            logger.warning(f"Current: lat={c['latitude']}, lon={c['longitude']}")
                             continue
-                        dist = haversine_m(p["latitude"], p["longitude"], c["latitude"], c["longitude"])
-                        # reachability gate
-                        if dist > gate_mps * dt + R_BUFFER_M:
-                            continue
-                        spd = (dist / dt) * 3.6
                         cont = 0.0
                         if p["stop_id"] and c["stop_id"] and p["stop_id"] == c["stop_id"]:
                             cont = 1.0
@@ -692,6 +725,14 @@ class BusMonitor:
                 logger.info("No previous batch found for delay calculation")
                 return 0
 
+            # Check if previous batch is recent enough (within 1 minute)
+            time_diff = (latest_batch - prev_batch).total_seconds()
+            if time_diff > 60:
+                logger.info(f"Previous batch is {time_diff:.1f}s old, skipping delay calculation (>60s)")
+                return 0
+
+            logger.info(f"Previous batch is {time_diff:.1f}s old, proceeding with delay calculation")
+
             # Find buses that have changed stops (indicating arrival)
             cursor.execute("""
                 SELECT
@@ -866,6 +907,12 @@ class BusMonitor:
                 delays_calculated = self.detect_stop_arrivals_and_calculate_delays()
                 if delays_calculated > 0:
                     logger.info(f"Calculated delays for {delays_calculated} bus arrivals")
+                else:
+                    logger.info("No delays calculated (no stop changes detected)")
+            else:
+                logger.info("No speed calculations performed (no valid links found or time gap too large)")
+        else:
+            logger.info("No new records added, skipping speed and delay calculations")
 
         timestamp = root.get('timestamp', 'unknown')
         logger.info(f"Processed data from timestamp: {timestamp}")

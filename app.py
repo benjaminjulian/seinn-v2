@@ -167,7 +167,7 @@ def database_status():
         for key, value in status_info.items():
             html += f"<li><strong>{key}:</strong> {value}</li>"
         html += "</ul>"
-        html += '<p><a href="/init-db">Initialize Database</a> | <a href="/test-monitor">Test Monitor</a> | <a href="/monitor-status">Monitor Status</a> | <a href="/">Home</a></p>'
+        html += '<p><a href="/init-db">Initialize Database</a> | <a href="/test-monitor">Test Monitor</a> | <a href="/monitor-status">Monitor Status</a> | <a href="/debug-data">Debug Data</a> | <a href="/migrate-db">Migrate DB</a> | <a href="/batch-timing">Batch Timing</a> | <a href="/">Home</a></p>'
 
         return html, 200
 
@@ -198,6 +198,114 @@ def test_monitor():
         import traceback
         traceback.print_exc()
         return f"Monitor test failed: {str(e)}", 500
+
+@app.route('/debug-data')
+def debug_data():
+    """Debug data types in the database."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Check recent bus_status records
+        cursor.execute("""
+            SELECT id, latitude, longitude, heading, speed_kmh, linked_id, recorded_at
+            FROM bus_status
+            ORDER BY recorded_at DESC
+            LIMIT 5
+        """)
+
+        records = cursor.fetchall()
+        return_db_connection(conn)
+
+        html = "<h1>Data Type Debug</h1><h2>Recent Bus Status Records:</h2><ul>"
+
+        for record in records:
+            html += f"<li><strong>ID {record['id']}:</strong><br>"
+            for key, value in record.items():
+                html += f"&nbsp;&nbsp;{key}: {value} (type: {type(value).__name__})<br>"
+            html += "</li><br>"
+
+        html += "</ul>"
+        html += f"<p>Total records found: {len(records)}</p>"
+        html += '<p><a href="/db-status">Database Status</a> | <a href="/">Home</a></p>'
+
+        return html, 200
+
+    except Exception as e:
+        logger.error(f"Debug data failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Debug failed: {str(e)}", 500
+
+@app.route('/migrate-db')
+def migrate_database():
+    """Migrate database to fix data type issues."""
+    try:
+        import subprocess
+        result = subprocess.run(['python', 'migrate_db.py'],
+                              capture_output=True, text=True, cwd='.')
+
+        if result.returncode == 0:
+            return f"✅ Database migration completed successfully<br><pre>{result.stdout}</pre>", 200
+        else:
+            return f"❌ Database migration failed<br><pre>{result.stderr}</pre>", 500
+
+    except Exception as e:
+        logger.error(f"Migration failed: {e}")
+        return f"Migration failed: {str(e)}", 500
+
+@app.route('/batch-timing')
+def batch_timing():
+    """Check timing between recent data batches."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Get last 10 batch timestamps
+        cursor.execute("""
+            SELECT DISTINCT recorded_at,
+                   COUNT(*) as record_count,
+                   COUNT(*) FILTER (WHERE speed_kmh IS NOT NULL) as with_speed,
+                   COUNT(*) FILTER (WHERE linked_id IS NOT NULL) as with_links
+            FROM bus_status
+            GROUP BY recorded_at
+            ORDER BY recorded_at DESC
+            LIMIT 10
+        """)
+
+        batches = cursor.fetchall()
+        return_db_connection(conn)
+
+        html = "<h1>Batch Timing Analysis</h1><table border='1'>"
+        html += "<tr><th>Recorded At</th><th>Records</th><th>With Speed</th><th>With Links</th><th>Gap (seconds)</th></tr>"
+
+        prev_time = None
+        for i, batch in enumerate(batches):
+            recorded_at = batch['recorded_at']
+            gap = ""
+            if prev_time:
+                gap_seconds = (prev_time - recorded_at).total_seconds()
+                gap = f"{gap_seconds:.1f}s"
+
+            html += f"""
+                <tr>
+                    <td>{recorded_at}</td>
+                    <td>{batch['record_count']}</td>
+                    <td>{batch['with_speed']}</td>
+                    <td>{batch['with_links']}</td>
+                    <td>{gap}</td>
+                </tr>
+            """
+            prev_time = recorded_at
+
+        html += "</table>"
+        html += '<p><a href="/db-status">Database Status</a> | <a href="/">Home</a></p>'
+
+        return html, 200
+
+    except Exception as e:
+        logger.error(f"Batch timing check failed: {e}")
+        return f"Batch timing check failed: {str(e)}", 500
 
 @app.route('/api/stations/search')
 def search_stations():
