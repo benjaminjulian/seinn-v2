@@ -32,31 +32,12 @@ def init_db_pool():
         db_pool = SimpleConnectionPool(1, 20, database_url)
         logger.info("Database connection pool initialized")
 
-        # Test connection and check if tables exist
+        # Test database connection
         conn = db_pool.getconn()
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'bus_status'")
-            table_exists = cursor.fetchone()[0] > 0
-            if not table_exists:
-                logger.warning("Database tables not found. Initializing database...")
-                try:
-                    # Initialize database directly
-                    from bus_monitor_pg import BusMonitor
-                    monitor = BusMonitor(database_url)
-                    logger.info("Database schema created successfully")
-
-                    # Try to download GTFS data
-                    logger.info("Attempting to download GTFS data...")
-                    if monitor.download_and_update_gtfs():
-                        logger.info("GTFS data loaded successfully")
-                    else:
-                        logger.warning("GTFS data download failed, but schema is ready")
-
-                except Exception as init_error:
-                    logger.error(f"Database initialization failed: {init_error}")
-                    logger.error("Web app will start but may have limited functionality")
-
+            cursor.execute("SELECT 1")
+            logger.info("Database connection test successful")
         except Exception as e:
             logger.error(f"Database connection test failed: {e}")
         finally:
