@@ -521,35 +521,75 @@ def station_name_buses(station_name):
 
         routes = cursor.fetchall()
 
-        # For each route, find the latest bus position and delay info
+        # For each route, find the latest bus position and delay info with direction information
         approaching_buses = []
         for route in routes:
-            # Get the most recent bus status for this route (note: bus_status.route is TEXT, not route_id)
+            # Get the most recent bus status for this route with delay and direction info
             cursor.execute("""
                 SELECT bs.*,
                        bd.delay_seconds as latest_delay,
                        bd.scheduled_arrival_time,
-                       bd.actual_arrival_time
+                       bd.actual_arrival_time,
+                       bd.stop_id as delay_stop_id,
+                       delay_stop.stop_name as delay_stop_name
                 FROM bus_status bs
                 LEFT JOIN bus_delays bd ON bs.route = bd.route_id
                     AND bd.recorded_at = (
                         SELECT MAX(recorded_at)
-                        FROM bus_delays
-                        WHERE route_id = bs.route
+                        FROM bus_delays bd2
+                        WHERE bd2.route_id = bs.route
                     )
+                LEFT JOIN gtfs_stops delay_stop ON bd.stop_id = delay_stop.stop_id
+                    AND delay_stop.version_id = (SELECT id FROM gtfs_versions WHERE is_active = TRUE LIMIT 1)
                 WHERE bs.route = %s
                 ORDER BY bs.recorded_at DESC
                 LIMIT 1
             """, (route['route_id'],))
 
             bus_status = cursor.fetchone()
-            if bus_status:
+            if not bus_status:
+                continue
+
+            # Try to get direction information from trips that serve the target stations
+            cursor.execute("""
+                SELECT DISTINCT gt.trip_headsign, gt.direction_id
+                FROM gtfs_trips gt
+                JOIN gtfs_stop_times st ON gt.trip_id = st.trip_id AND gt.version_id = st.version_id
+                WHERE gt.route_id = %s
+                AND gt.version_id = (SELECT id FROM gtfs_versions WHERE is_active = TRUE LIMIT 1)
+                AND st.stop_id IN ({})
+                AND gt.trip_headsign IS NOT NULL
+                ORDER BY gt.direction_id
+            """.format(','.join(['%s'] * len(station_ids))), [route['route_id']] + station_ids)
+
+            directions = cursor.fetchall()
+
+            # Create an entry for each direction found for this route
+            if directions:
+                for direction in directions:
+                    approaching_buses.append({
+                        'route_id': route['route_id'],
+                        'route_short_name': route['route_short_name'],
+                        'route_long_name': route['route_long_name'],
+                        'trip_headsign': direction.get('trip_headsign'),
+                        'direction_id': direction.get('direction_id'),
+                        'bus_status': dict(bus_status),
+                        'latest_delay_seconds': bus_status.get('latest_delay', 0),
+                        'delay_measured_at_stop': bus_status.get('delay_stop_name'),
+                        'delay_stop_id': bus_status.get('delay_stop_id')
+                    })
+            else:
+                # Fallback: if no direction info found, still show the bus
                 approaching_buses.append({
                     'route_id': route['route_id'],
                     'route_short_name': route['route_short_name'],
                     'route_long_name': route['route_long_name'],
+                    'trip_headsign': None,
+                    'direction_id': None,
                     'bus_status': dict(bus_status),
-                    'latest_delay_seconds': bus_status.get('latest_delay', 0)
+                    'latest_delay_seconds': bus_status.get('latest_delay', 0),
+                    'delay_measured_at_stop': bus_status.get('delay_stop_name'),
+                    'delay_stop_id': bus_status.get('delay_stop_id')
                 })
 
         return jsonify({

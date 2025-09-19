@@ -243,20 +243,40 @@ class StationSearch {
             const delayMin = Math.round((bus.latest_delay_seconds || 0) / 60);
             const delayClass = delayMin > 0 ? 'positive' : delayMin < 0 ? 'negative' : 'neutral';
 
+            // Build direction info
+            let directionInfo = '';
+            if (bus.trip_headsign) {
+                directionInfo = `<div><small class="text-muted">→ ${bus.trip_headsign}</small></div>`;
+            } else if (bus.direction_id !== null) {
+                directionInfo = `<div><small class="text-muted">→ ${t('DIRECTION')} ${bus.direction_id}</small></div>`;
+            }
+
+            // Build delay measurement info
+            let delayMeasurementInfo = '';
+            if (bus.delay_measured_at_stop && bus.latest_delay_seconds !== null) {
+                delayMeasurementInfo = `<small class="text-muted">${t('MEASURED_AT')}: ${bus.delay_measured_at_stop}</small>`;
+            }
+
             html += `
                 <div class="result-item">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="route-badge">${bus.route_short_name || bus.route_id}</span>
-                            <small class="text-muted ms-2">${bus.route_long_name || ''}</small>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="route-badge">${bus.route_short_name || bus.route_id}</span>
+                                <small class="text-muted ms-2">${bus.route_long_name || ''}</small>
+                            </div>
+                            ${directionInfo}
                         </div>
                         <div class="text-end">
-                            <div class="delay-${delayClass}">
+                            <div class="delay-${delayClass} fw-bold">
                                 ${delayMin > 0 ? '+' : ''}${delayMin} ${t('MINUTES_ABBREV')}
                             </div>
-                            <small class="text-muted">
-                                ${bus.bus_status.speed_kmh ? `${Math.round(bus.bus_status.speed_kmh)} km/h` : ''}
-                            </small>
+                            ${delayMeasurementInfo}
+                            <div>
+                                <small class="text-muted">
+                                    ${bus.bus_status.speed_kmh ? `${Math.round(bus.bus_status.speed_kmh)} km/h` : ''}
+                                </small>
+                            </div>
                         </div>
                     </div>
                 </div>

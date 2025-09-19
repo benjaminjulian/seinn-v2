@@ -96,6 +96,8 @@ const TRANSLATIONS = {
         ROUTE_STATISTICS_24H: "Route Statistics (24h)",
         RECENT_ARRIVALS: "Recent Arrivals",
         APPROACHING_BUSES: "Approaching Buses",
+        DIRECTION: "Direction",
+        MEASURED_AT: "Measured at",
         AVG_DELAY_LABEL: "Avg delay:",
         EARLY_ARRIVAL: "Early:",
 
@@ -241,6 +243,8 @@ const TRANSLATIONS = {
         ROUTE_STATISTICS_24H: "Leiðartölfræði (24 klst)",
         RECENT_ARRIVALS: "Nýlegar komur",
         APPROACHING_BUSES: "Vagnar á leið",
+        DIRECTION: "Stefna",
+        MEASURED_AT: "Mælt við",
         AVG_DELAY_LABEL: "Meðaltöf:",
         EARLY_ARRIVAL: "Fyrirtækni:",
 
