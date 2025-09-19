@@ -548,7 +548,7 @@ def station_approaching_buses(stop_id):
         cursor.execute("""
             WITH RECURSIVE
             latest_batch AS (
-              SELECT MAX(recorded_at) AS ts FROM bus_status
+              SELECT MAX(recorded_at) AS ts FROM bus_status WHERE linked_id IS NOT NULL
             ),
             recent AS (
               SELECT *
@@ -738,7 +738,7 @@ def station_name_approaching_buses(station_name):
             cursor.execute("""
                 WITH RECURSIVE
                 latest_batch AS (
-                  SELECT MAX(recorded_at) AS ts FROM bus_status
+                  SELECT MAX(recorded_at) AS ts FROM bus_status WHERE linked_id IS NOT NULL
                 ),
                 recent AS (
                   SELECT *
