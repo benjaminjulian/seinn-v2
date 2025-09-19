@@ -9,5 +9,13 @@ wheels/
 # Virtual environments
 .venv
 
+# Personal problems
 .DS_Store
 review.md
+
+# Local demo
+.env
+.python-version
+hello.py
+pyproject.toml
+requirements.txt

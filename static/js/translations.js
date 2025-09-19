@@ -153,7 +153,24 @@ const TRANSLATIONS = {
         SPEED_LEGEND_SLOW: "10-20",
         SPEED_LEGEND_MODERATE: "20-40",
         SPEED_LEGEND_FAST: "40-60",
-        SPEED_LEGEND_VERY_FAST: "> 60"
+        SPEED_LEGEND_VERY_FAST: "> 60",
+
+        // New bus tracking translations
+        NO_BUSES_APPROACHING: "No buses approaching these stations",
+        BUSES_WITH_NAME: "stations with this name",
+        STATION_WITH_NAME: "station with this name",
+        NO_BUSES_FOR_STATION: "No buses approaching",
+        AT_STATION: "At station",
+        LEAVING_STATION: "Leaving station",
+        NEXT_STOP_IS_HERE: "Next stop is here",
+        STOPS_AWAY_SINGLE: "stop away",
+        STOPS_AWAY_PLURAL: "stops away",
+        LOCATION_LABEL: "Location:",
+        LAST_UPDATED_LABEL: "Last updated:",
+        DELAY_INFO_TEMPLATE: "Arrived {time} {status} at last stop.",
+        DELAY_STATUS_ON_TIME: "on time",
+        DELAY_STATUS_LATE: "minutes late",
+        DELAY_STATUS_EARLY: "minutes early"
     },
 
     IS: {
@@ -307,7 +324,24 @@ const TRANSLATIONS = {
         SPEED_LEGEND_SLOW: "10-20",
         SPEED_LEGEND_MODERATE: "20-40",
         SPEED_LEGEND_FAST: "40-60",
-        SPEED_LEGEND_VERY_FAST: "> 60"
+        SPEED_LEGEND_VERY_FAST: "> 60",
+
+        // New bus tracking translations
+        NO_BUSES_APPROACHING: "Engir strætó á leiðinni að þessum stöðvum",
+        BUSES_WITH_NAME: "stöðvar með þessu nafni",
+        STATION_WITH_NAME: "stöð með þessu nafni",
+        NO_BUSES_FOR_STATION: "Engir strætó á leiðinni",
+        AT_STATION: "Á þessu stoppi",
+        LEAVING_STATION: "Á leið héðan",
+        NEXT_STOP_IS_HERE: "Næsta stopp er hér",
+        STOPS_AWAY_SINGLE: "stoppi frá",
+        STOPS_AWAY_PLURAL: "stoppum frá",
+        LOCATION_LABEL: "Staðsetning:",
+        LAST_UPDATED_LABEL: "Síðast uppfært:",
+        DELAY_INFO_TEMPLATE: "Kom {time} {status} á síðasta stopp.",
+        DELAY_STATUS_ON_TIME: "á réttum tíma",
+        DELAY_STATUS_LATE: "mínútum of seint",
+        DELAY_STATUS_EARLY: "mínútum of snemma"
     }
 };
 

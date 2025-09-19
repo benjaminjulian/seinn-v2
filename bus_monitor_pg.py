@@ -228,6 +228,17 @@ class BusMonitor:
             )
         ''')
 
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS gtfs_calendar_dates (
+                version_id INTEGER NOT NULL,
+                service_id TEXT NOT NULL,
+                date TEXT NOT NULL,
+                exception_type INTEGER NOT NULL,
+                FOREIGN KEY (version_id) REFERENCES gtfs_versions (id),
+                PRIMARY KEY (version_id, service_id, date)
+            )
+        ''')
+
         # Delay tracking table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS bus_delays (
@@ -581,6 +592,7 @@ class BusMonitor:
                 self._parse_gtfs_file(zf, 'trips.txt', cursor, version_id, self._insert_trips)
                 self._parse_gtfs_file(zf, 'stop_times.txt', cursor, version_id, self._insert_stop_times)
                 self._parse_gtfs_file(zf, 'calendar.txt', cursor, version_id, self._insert_calendar)
+                self._parse_gtfs_file(zf, 'calendar_dates.txt', cursor, version_id, self._insert_calendar_dates)
 
             conn.commit()
             conn.close()
@@ -718,6 +730,21 @@ class BusMonitor:
             int(row.get('sunday', 0)),
             row.get('start_date', '').strip('"'),
             row.get('end_date', '').strip('"')
+        ))
+
+    def _insert_calendar_dates(self, cursor, version_id, row):
+        """Insert calendar dates (exceptions) data."""
+        cursor.execute('''
+            INSERT INTO gtfs_calendar_dates
+            (version_id, service_id, date, exception_type)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (version_id, service_id, date) DO UPDATE SET
+                exception_type = EXCLUDED.exception_type
+        ''', (
+            version_id,
+            row.get('service_id', '').strip('"'),
+            row.get('date', '').strip('"'),
+            int(row.get('exception_type', 1))
         ))
 
     def should_update_gtfs(self) -> bool:

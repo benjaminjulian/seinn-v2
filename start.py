@@ -5,6 +5,14 @@ import sys
 import logging
 import time
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available, skip loading .env file
+    pass
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -60,8 +68,8 @@ def main():
     init_db_pool()
 
     # Start the app
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    port = int(os.environ.get('PORT', 8000))  # Changed to port 8000
+    app.run(host='0.0.0.0', port=port, debug=True)
 
 if __name__ == "__main__":
     main()

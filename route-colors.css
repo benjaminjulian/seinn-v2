@@ -1,0 +1,410 @@
+
+.route-S1 {
+    --color-route: #fff;
+    --color-route-text: #11b09b;
+    --color-route-arrow:#11b09b
+}
+
+.route-S-song {
+    --color-route: #e129f1;
+    --color-route-text:#fff
+}
+
+.route-S-pride {
+    --color-route: linear-gradient(90deg, #ef3026, #fcf201 35%, #0054aa);
+    --color-route-arrow: #ef3026;
+    --color-route-text:#fff
+}
+
+.route-1 {
+    --color-route: #ef4934;
+    --color-route-text:#fff
+}
+
+.route-2 {
+    --color-route: #acc437;
+    --color-route-text:#000
+}
+
+.route-3 {
+    --color-route: #fdbc14;
+    --color-route-text:#000
+}
+
+.route-4 {
+    --color-route: #306e4a;
+    --color-route-text:#fff
+}
+
+.route-5 {
+    --color-route: #db1a5a;
+    --color-route-text:#fff
+}
+
+.route-6 {
+    --color-route: #00a754;
+    --color-route-text:#fff
+}
+
+.route-7 {
+    --color-route: #cb4138;
+    --color-route-text:#fff
+}
+
+.route-8 {
+    --color-route: #11b09b;
+    --color-route-text:#fff
+}
+
+.route-11 {
+    --color-route: #e35289;
+    --color-route-text:#fff
+}
+
+.route-12 {
+    --color-route: #0a68b3;
+    --color-route-text:#fff
+}
+
+.route-13 {
+    --color-route: #00a2b5;
+    --color-route-text:#fff
+}
+
+.route-14 {
+    --color-route: #7157a4;
+    --color-route-text:#fff
+}
+
+.route-15 {
+    --color-route: #215266;
+    --color-route-text:#fff
+}
+
+.route-16 {
+    --color-route: #d9c127;
+    --color-route-text:#000
+}
+
+.route-17 {
+    --color-route: #564b1e;
+    --color-route-text:#fff
+}
+
+.route-18 {
+    --color-route: #f26c4e;
+    --color-route-text:#fff
+}
+
+.route-19 {
+    --color-route: #589b55;
+    --color-route-text:#fff
+}
+
+.route-21 {
+    --color-route: #e0b33c;
+    --color-route-text:#000
+}
+
+.route-22 {
+    --color-route: #00a97d;
+    --color-route-text:#fff
+}
+
+.route-23 {
+    --color-route: #292565;
+    --color-route-text:#fff
+}
+
+.route-24 {
+    --color-route: #26566c;
+    --color-route-text:#fff
+}
+
+.route-25 {
+    --color-route: #2491d3;
+    --color-route-text:#fff
+}
+
+.route-26 {
+    --color-route: #0a68b3;
+    --color-route-text:#fff
+}
+
+.route-27 {
+    --color-route: #69ba9b;
+    --color-route-text:#fff
+}
+
+.route-28 {
+    --color-route: #bd107d;
+    --color-route-text:#fff
+}
+
+.route-29 {
+    --color-route: #494845;
+    --color-route-text:#fff
+}
+
+.route-31 {
+    --color-route: #6b5661;
+    --color-route-text:#fff
+}
+
+.route-33 {
+    --color-route: #cc8d3d;
+    --color-route-text:#fff
+}
+
+.route-34 {
+    --color-route: #98c568;
+    --color-route-text:#fff
+}
+
+.route-35 {
+    --color-route: #206574;
+    --color-route-text:#fff
+}
+
+.route-36 {
+    --color-route: #f18b28;
+    --color-route-text:#fff
+}
+
+.route-43 {
+    --color-route: #847b5a;
+    --color-route-text:#fff
+}
+
+.route-44 {
+    --color-route: #2d2c7e;
+    --color-route-text:#fff
+}
+
+.route-51 {
+    --color-route:#bd107d
+}
+
+.route-52, .route-55 {
+    --color-route:#4578ac
+}
+
+.route-56 {
+    --color-route:#2f2b7f
+}
+
+.route-57 {
+    --color-route:#e53c2e
+}
+
+.route-58 {
+    --color-route:#68bb95
+}
+
+.route-59 {
+    --color-route:#295468
+}
+
+.route-61 {
+    --color-route:#47105f
+}
+
+.route-62 {
+    --color-route:#9b2e2a
+}
+
+.route-63 {
+    --color-route:#744f98
+}
+
+.route-64 {
+    --color-route:#0a9d0a
+}
+
+.route-65 {
+    --color-route:#febc10
+}
+
+.route-71 {
+    --color-route:#2d6d46
+}
+
+.route-72 {
+    --color-route:#b3c338
+}
+
+.route-73 {
+    --color-route:#eb654b
+}
+
+.route-75 {
+    --color-route:#575454
+}
+
+.route-78 {
+    --color-route:#18a7bc
+}
+
+.route-79 {
+    --color-route:#f08728
+}
+
+.route-81 {
+    --color-route:#827b55
+}
+
+.route-82 {
+    --color-route:#de4c84
+}
+
+.route-83 {
+    --color-route:#ddc030
+}
+
+.route-84 {
+    --color-route:#f36f20
+}
+
+.route-87 {
+    --color-route:#fbbd2b
+}
+
+.route-88 {
+    --color-route:#d60e51
+}
+
+.route-89 {
+    --color-route:#199d48
+}
+
+.route-91 {
+    --color-route:#ef4934
+}
+
+.route-92 {
+    --color-route:#00a754
+}
+
+.route-93 {
+    --color-route:#fdbc14
+}
+
+.route-94 {
+    --color-route:#7157a4
+}
+
+.route-95 {
+    --color-route:#0a68b3
+}
+
+.route-96 {
+    --color-route:#f59c27
+}
+
+.route-101 {
+    --color-route:#1f609a
+}
+
+.route-102, .route-103, .route-105, .route-106 {
+    --color-route:#cac6c6
+}
+
+.route-A1 {
+    --color-route: #0a68b3;
+    --color-route-text:#fff
+}
+
+.route-A2 {
+    --color-route: #ef4934;
+    --color-route-text:#fff
+}
+
+.route-A3 {
+    --color-route: #00a2b5;
+    --color-route-text:#fff
+}
+
+.route-A4 {
+    --color-route: #f26c4e;
+    --color-route-text:#fff
+}
+
+.route-A5 {
+    --color-route: #00a754;
+    --color-route-text:#fff
+}
+
+.route-A6 {
+    --color-route: #7157a4;
+    --color-route-text:#fff
+}
+
+.route-R1 {
+    --color-route: #0a68b3;
+    --color-route-text:#fff
+}
+
+.route-R2, .route-R3 {
+    --color-route: #fdbc14;
+    --color-route-text:#fff
+}
+
+.route-E1, .route-R4 {
+    --color-route: #ef4934;
+    --color-route-text:#fff
+}
+
+.route-E2 {
+    --color-route: #00a754;
+    --color-route-text:#fff
+}
+
+.route-E3 {
+    --color-route: #fdbc14;
+    --color-route-text:#fff
+}
+
+.route-E4 {
+    --color-route: #7157a4;
+    --color-route-text:#fff
+}
+
+.route-E5 {
+    --color-route: #0a68b3;
+    --color-route-text:#fff
+}
+
+.route-101 {
+    --color-route: #d22328;
+    --color-route-text:#fff
+}
+
+.route-102 {
+    --color-route: #0a9d0a;
+    --color-route-text:#fff
+}
+
+.route-103 {
+    --color-route: #e8b42e;
+    --color-route-text:#fff
+}
+
+.route-104 {
+    --color-route: #068cfd;
+    --color-route-text:#fff
+}
+
+.route-105 {
+    --color-route: #d22328;
+    --color-route-text:#fff
+}
+
+.route-106 {
+    --color-route: #db654f;
+    --color-route-text:#fff
+}
+
+.route-107 {
+    --color-route: #d11ec8;
+    --color-route-text:#fff
+}

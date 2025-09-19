@@ -296,3 +296,58 @@ body {
 .bar-very-late {
     background-color: #dc3545;
 }
+
+/* Bus item specific styles */
+.bus-item {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6 !important;
+    cursor: default;
+}
+
+.bus-item:hover {
+    background-color: #e9ecef;
+}
+
+.bus-item .route-badge {
+    margin-bottom: 0;
+}
+
+/* Station-specific result items shouldn't have hover cursor since they contain buses */
+.result-item:has(.bus-item) {
+    cursor: default;
+}
+
+.result-item:has(.bus-item):hover {
+    background-color: var(--white);
+}
+
+/* Map marker styles */
+.station-marker {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.station-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+}
+
+.bus-marker {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.bus-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.bus-route-badge {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    border: 1px solid #ccc;
+}
