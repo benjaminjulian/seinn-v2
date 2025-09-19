@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Tuple
 import json
 import sys
+from translations import t
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -514,10 +515,10 @@ def search_stations():
 
     except psycopg2.errors.UndefinedTable:
         logger.error("Database tables not found. Run database initialization.")
-        return jsonify({'error': 'Gagnagrunnur ekki tilbúinn. Vinsamlegast hafðu samband við kerfisstjóra.'}), 503
+        return jsonify({'error': t('ERROR_DATABASE_NOT_INITIALIZED')}), 503
     except Exception as e:
         logger.error(f"Error searching stations: {e}")
-        return jsonify({'error': 'Villa í gagnagrunni'}), 500
+        return jsonify({'error': t('ERROR_DATABASE')}), 500
     finally:
         return_db_connection(conn)
 
@@ -529,7 +530,7 @@ def nearby_stations():
         lon = float(request.args.get('lon'))
         radius = min(float(request.args.get('radius', 1000)), 5000)  # Max 5km
     except (TypeError, ValueError):
-        return jsonify({'error': 'Ógild staðsetning'}), 400
+        return jsonify({'error': t('ERROR_INVALID_COORDINATES')}), 400
 
     conn = get_db_connection()
     try:
@@ -557,7 +558,7 @@ def nearby_stations():
 
     except Exception as e:
         logger.error(f"Error finding nearby stations: {e}")
-        return jsonify({'error': 'Villa í gagnagrunni'}), 500
+        return jsonify({'error': t('ERROR_DATABASE')}), 500
     finally:
         return_db_connection(conn)
 
@@ -624,7 +625,7 @@ def station_delays(stop_id):
 
     except Exception as e:
         logger.error(f"Error getting station delays: {e}")
-        return jsonify({'error': 'Villa í gagnagrunni'}), 500
+        return jsonify({'error': t('ERROR_DATABASE')}), 500
     finally:
         return_db_connection(conn)
 
@@ -644,7 +645,7 @@ def station_detail(stop_id):
 
         station = cursor.fetchone()
         if not station:
-            return "Stöð fannst ekki", 404
+            return t('ERROR_STATION_NOT_FOUND'), 404
 
         return render_template('station_detail.html', station=dict(station))
 
@@ -687,7 +688,7 @@ def speed_data():
 
     except Exception as e:
         logger.error(f"Error getting speed data: {e}")
-        return jsonify({'error': 'Villa í gagnagrunni'}), 500
+        return jsonify({'error': t('ERROR_DATABASE')}), 500
     finally:
         return_db_connection(conn)
 
@@ -730,7 +731,7 @@ def route_stats():
 
     except Exception as e:
         logger.error(f"Error getting route stats: {e}")
-        return jsonify({'error': 'Villa í gagnagrunni'}), 500
+        return jsonify({'error': t('ERROR_DATABASE')}), 500
     finally:
         return_db_connection(conn)
 
@@ -789,11 +790,11 @@ def system_stats():
             'recent_records': 0,
             'recent_delays': 0,
             'latest_update': None,
-            'error': 'Gagnagrunnur ekki tilbúinn'
+            'error': t('ERROR_DATABASE_NOT_INITIALIZED')
         })
     except Exception as e:
         logger.error(f"Error getting system stats: {e}")
-        return jsonify({'error': 'Villa í gagnagrunni'}), 500
+        return jsonify({'error': t('ERROR_DATABASE')}), 500
     finally:
         return_db_connection(conn)
 
@@ -865,7 +866,7 @@ def station_route_pairs():
 
     except Exception as e:
         logger.error(f"Error getting station-route pairs: {e}")
-        return jsonify({'error': 'Villa í gagnagrunni'}), 500
+        return jsonify({'error': t('ERROR_DATABASE')}), 500
     finally:
         return_db_connection(conn)
 
@@ -912,7 +913,7 @@ def delay_histogram():
 
     except Exception as e:
         logger.error(f"Error getting delay histogram: {e}")
-        return jsonify({'error': 'Villa í gagnagrunni'}), 500
+        return jsonify({'error': t('ERROR_DATABASE')}), 500
     finally:
         return_db_connection(conn)
 

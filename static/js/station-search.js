@@ -95,7 +95,7 @@ class StationSearch {
             return;
         }
 
-        this.findNearbyButton.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Leita...';
+        this.findNearbyButton.innerHTML = `<i class="bi bi-arrow-clockwise spin"></i> ${t('SEARCHING')}`;
         this.findNearbyButton.disabled = true;
 
         navigator.geolocation.getCurrentPosition(
@@ -110,15 +110,15 @@ class StationSearch {
                     this.displayNearbyResults(stations);
                 } catch (error) {
                     console.error('Nearby search error:', error);
-                    this.showError('Gat ekki fundið nálægar stöðvar');
+                    this.showError(t('ERROR_FIND_NEARBY'));
                 } finally {
-                    this.findNearbyButton.innerHTML = '<i class="bi bi-geo-alt"></i> Nota staðsetningu mína';
+                    this.findNearbyButton.innerHTML = `<i class="bi bi-geo-alt"></i> ${t('USE_MY_LOCATION')}`;
                     this.findNearbyButton.disabled = false;
                 }
             },
             (error) => {
                 console.error('Geolocation error:', error);
-                this.showError('Gat ekki náð í staðsetningu þína');
+                this.showError(t('ERROR_GET_LOCATION'));
                 this.findNearbyButton.innerHTML = '<i class="bi bi-geo-alt"></i> Use My Location';
                 this.findNearbyButton.disabled = false;
             }
@@ -127,7 +127,7 @@ class StationSearch {
 
     displayNearbyResults(stations) {
         if (stations.length === 0) {
-            this.nearbyResults.innerHTML = '<div class="list-group-item">Engar nálægar stöðvar fundust</div>';
+            this.nearbyResults.innerHTML = `<div class="list-group-item">${t('NO_NEARBY_STATIONS')}</div>`;
         } else {
             this.nearbyResults.innerHTML = stations.map(station => `
                 <div class="list-group-item list-group-item-action" data-station-id="${station.stop_id}">

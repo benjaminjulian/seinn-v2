@@ -127,7 +127,7 @@ class AnalyticsView {
                 radius: radius,
                 weight: 1
             }).addTo(this.speedMap)
-              .bindPopup(`Leið ${point.route}<br>Hraði: ${speed.toFixed(1)} km/klst`);
+              .bindPopup(`${t('ROUTE')} ${point.route}<br>${t('SPEED')}: ${speed.toFixed(1)} km/klst`);
         });
 
         // Add legend
@@ -145,7 +145,7 @@ class AnalyticsView {
             div.style.borderRadius = '5px';
 
             div.innerHTML = `
-                <h6>Hraði (km/klst)</h6>
+                <h6>${t('SPEED_KMH')}</h6>
                 <div><span style="color: #dc3545; font-size: 20px;">●</span> < 10</div>
                 <div><span style="color: #fd7e14; font-size: 20px;">●</span> 10-20</div>
                 <div><span style="color: #ffc107; font-size: 20px;">●</span> 20-40</div>
@@ -203,21 +203,21 @@ class AnalyticsView {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Á réttum tíma',
+                        label: t('ON_TIME'),
                         data: onTimeData,
                         backgroundColor: 'rgba(40, 167, 69, 0.8)',
                         borderColor: 'rgb(40, 167, 69)',
                         borderWidth: 1
                     },
                     {
-                        label: 'Seint',
+                        label: t('LATE'),
                         data: lateData,
                         backgroundColor: 'rgba(255, 193, 7, 0.8)',
                         borderColor: 'rgb(255, 193, 7)',
                         borderWidth: 1
                     },
                     {
-                        label: 'Snemma',
+                        label: t('EARLY'),
                         data: earlyData,
                         backgroundColor: 'rgba(23, 162, 184, 0.8)',
                         borderColor: 'rgb(23, 162, 184)',
@@ -233,7 +233,7 @@ class AnalyticsView {
                         stacked: true,
                         title: {
                             display: true,
-                            text: 'Leið'
+                            text: t('ROUTE')
                         }
                     },
                     y: {
@@ -242,7 +242,7 @@ class AnalyticsView {
                         max: 100,
                         title: {
                             display: true,
-                            text: 'Prósenta'
+                            text: t('PERCENTAGE')
                         }
                     }
                 },
@@ -268,13 +268,13 @@ class AnalyticsView {
                 routeStats = await response.json();
             } catch (error) {
                 console.error('Error loading route stats for table:', error);
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Gat ekki hlaðið gögn</td></tr>';
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">${t('ERROR_LOAD_DATA')}</td></tr>`;
                 return;
             }
         }
 
         if (routeStats.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Engin gögn til staðar</td></tr>';
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center">${t('NO_DATA_AVAILABLE')}</td></tr>`;
             return;
         }
 
@@ -330,7 +330,7 @@ class AnalyticsView {
                                 ${pair.stop_name}
                             </h6>
                             <small class="text-muted">
-                                Meðaltöf: <span class="text-danger">+${avgDelayMin} mín</span>
+                                ${t('AVG_DELAY_LABEL')} <span class="text-danger">+${avgDelayMin} ${t('MINUTES_ABBREV')}</span>
                                 (${pair.arrival_count} komur)
                             </small>
                         </div>
@@ -338,7 +338,7 @@ class AnalyticsView {
                 `;
             }).join('');
         } else {
-            mostDelayedDiv.innerHTML = '<p class="text-muted">Engin gögn til staðar</p>';
+            mostDelayedDiv.innerHTML = `<p class="text-muted">${t('NO_DATA_AVAILABLE')}</p>`;
         }
 
         // Update earliest pairs
@@ -362,7 +362,7 @@ class AnalyticsView {
                 `;
             }).join('');
         } else {
-            mostEarlyDiv.innerHTML = '<p class="text-muted">Engin gögn til staðar</p>';
+            mostEarlyDiv.innerHTML = `<p class="text-muted">${t('NO_DATA_AVAILABLE')}</p>`;
         }
     }
 
@@ -448,7 +448,7 @@ class AnalyticsView {
                         stacked: true,
                         title: {
                             display: true,
-                            text: 'Leið'
+                            text: t('ROUTE')
                         }
                     },
                     y: {
@@ -481,7 +481,7 @@ class AnalyticsView {
         const tableBody = document.querySelector('#routeStatsTable tbody');
 
         if (routeData.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Engin gögn til staðar</td></tr>';
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center">${t('NO_DATA_AVAILABLE')}</td></tr>`;
             return;
         }
 

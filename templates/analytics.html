@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Greiningar - Strætó Vaktar{% endblock %}
+{% block title %}<span data-translate="PAGE_TITLE_ANALYTICS">Greiningar - Strætó Vaktar</span>{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h4 class="mb-0"><i class="bi bi-graph-up"></i> Kerfigreiningar</h4>
+                <h4 class="mb-0"><i class="bi bi-graph-up"></i> <span data-translate="SYSTEM_ANALYTICS">Kerfigreiningar</span></h4>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -15,7 +15,7 @@
                         <div class="card bg-primary text-white">
                             <div class="card-body text-center">
                                 <h3 id="totalRecords">-</h3>
-                                <p class="mb-0">Heildarskráningar</p>
+                                <p class="mb-0" data-translate="TOTAL_RECORDS">Heildarskráningar</p>
                             </div>
                         </div>
                     </div>
@@ -23,7 +23,7 @@
                         <div class="card bg-success text-white">
                             <div class="card-body text-center">
                                 <h3 id="uniqueRoutes">-</h3>
-                                <p class="mb-0">Virkar leiðir</p>
+                                <p class="mb-0" data-translate="ACTIVE_ROUTES">Virkar leiðir</p>
                             </div>
                         </div>
                     </div>
@@ -31,7 +31,7 @@
                         <div class="card bg-warning text-white">
                             <div class="card-body text-center">
                                 <h3 id="recentRecords">-</h3>
-                                <p class="mb-0">Síðustu 24 klst</p>
+                                <p class="mb-0" data-translate="LAST_24H">Síðustu 24 klst</p>
                             </div>
                         </div>
                     </div>
@@ -39,7 +39,7 @@
                         <div class="card bg-info text-white">
                             <div class="card-body text-center">
                                 <h3 id="recentDelays">-</h3>
-                                <p class="mb-0">Nýlegar tafir</p>
+                                <p class="mb-0" data-translate="RECENT_DELAYS">Nýlegar tafir</p>
                             </div>
                         </div>
                     </div>
@@ -53,10 +53,10 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-bar-chart-steps"></i> Verstu stöðva-leið pör</h5>
+                <h5 class="mb-0"><i class="bi bi-bar-chart-steps"></i> <span data-translate="WORST_STATION_ROUTE_PAIRS">Verstu stöðva-leið pör</span></h5>
                 <div class="btn-group" role="group">
                     <input type="radio" class="btn-check" name="worstTimeFilter" id="worst24h" value="24" checked>
-                    <label class="btn btn-outline-primary btn-sm" for="worst24h">24 klst</label>
+                    <label class="btn btn-outline-primary btn-sm" for="worst24h" data-translate="TIME_24H">24 klst</label>
 
                     <input type="radio" class="btn-check" name="worstTimeFilter" id="worst48h" value="48">
                     <label class="btn btn-outline-primary btn-sm" for="worst48h">48 klst</label>
@@ -68,7 +68,7 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h6>Mest töfin</h6>
+                        <h6 data-translate="MOST_DELAYED">Mest töfin</h6>
                         <div id="mostDelayed" class="mb-3">
                             <div class="text-center">
                                 <div class="spinner-border" role="status">
@@ -78,7 +78,7 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <h6>Mesta fyrirtækni</h6>
+                        <h6 data-translate="MOST_EARLY">Mesta fyrirtækni</h6>
                         <div id="mostEarly" class="mb-3">
                             <div class="text-center">
                                 <div class="spinner-border" role="status">
@@ -97,7 +97,7 @@
     <div class="col-lg-6">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Hitakort hraða</h5>
+                <h5 class="mb-0"><i class="bi bi-speedometer2"></i> <span data-translate="SPEED_HEATMAP">Hitakort hraða</span></h5>
                 <div class="btn-group" role="group">
                     <input type="radio" class="btn-check" name="speedTimeFilter" id="speed24h" value="24" checked>
                     <label class="btn btn-outline-primary btn-sm" for="speed24h">24 klst</label>
@@ -118,7 +118,7 @@
     <div class="col-lg-6">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Frammistöðu leiða</h5>
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> <span data-translate="ROUTE_PERFORMANCE">Frammistöðu leiða</span></h5>
                 <div class="btn-group" role="group">
                     <input type="radio" class="btn-check" name="routeTimeFilter" id="route24h" value="24" checked>
                     <label class="btn btn-outline-primary btn-sm" for="route24h">24 klst</label>
@@ -141,7 +141,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-bar-chart-line"></i> Töfadreifing eftir leiðum</h5>
+                <h5 class="mb-0"><i class="bi bi-bar-chart-line"></i> <span data-translate="DELAY_DISTRIBUTION">Töfadreifing eftir leiðum</span></h5>
                 <div class="btn-group" role="group">
                     <input type="radio" class="btn-check" name="histogramTimeFilter" id="hist24h" value="24" checked>
                     <label class="btn btn-outline-primary btn-sm" for="hist24h">24 klst</label>
@@ -164,18 +164,18 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-table"></i> Leiðartölfræði</h5>
+                <h5 class="mb-0"><i class="bi bi-table"></i> <span data-translate="ROUTE_STATISTICS">Leiðartölfræði</span></h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-striped" id="routeStatsTable">
                         <thead>
                             <tr>
-                                <th>Leið</th>
-                                <th>Heildar komur</th>
-                                <th>Meðaltöf</th>
-                                <th>Á réttum tíma</th>
-                                <th>Dreifing tafa</th>
+                                <th data-translate="ROUTE_COL">Leið</th>
+                                <th data-translate="TOTAL_ARRIVALS">Heildar komur</th>
+                                <th data-translate="AVG_DELAY">Meðaltöf</th>
+                                <th data-translate="ON_TIME_PERCENT">Á réttum tíma</th>
+                                <th data-translate="DELAY_DISTRIBUTION_COL">Dreifing tafa</th>
                             </tr>
                         </thead>
                         <tbody>
