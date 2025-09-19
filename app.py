@@ -562,7 +562,7 @@ def nearby_stations():
         return_db_connection(conn)
 
 @app.route('/api/station/<stop_id>/delays')
-def station_delays():
+def station_delays(stop_id):
     """Get latest delay information for a specific station."""
     hours = min(int(request.args.get('hours', 24)), 168)  # Max 7 days
 
@@ -629,7 +629,7 @@ def station_delays():
         return_db_connection(conn)
 
 @app.route('/station/<stop_id>')
-def station_detail():
+def station_detail(stop_id):
     """Station detail page."""
     conn = get_db_connection()
     try:
