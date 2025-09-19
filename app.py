@@ -524,20 +524,20 @@ def station_name_buses(station_name):
         # For each route, find the latest bus position and delay info
         approaching_buses = []
         for route in routes:
-            # Get the most recent bus status for this route
+            # Get the most recent bus status for this route (note: bus_status.route is TEXT, not route_id)
             cursor.execute("""
                 SELECT bs.*,
                        bd.delay_seconds as latest_delay,
                        bd.scheduled_arrival_time,
                        bd.actual_arrival_time
                 FROM bus_status bs
-                LEFT JOIN bus_delays bd ON bs.route_id = bd.route_id
+                LEFT JOIN bus_delays bd ON bs.route = bd.route_id
                     AND bd.recorded_at = (
                         SELECT MAX(recorded_at)
                         FROM bus_delays
-                        WHERE route_id = bs.route_id
+                        WHERE route_id = bs.route
                     )
-                WHERE bs.route_id = %s
+                WHERE bs.route = %s
                 ORDER BY bs.timestamp DESC
                 LIMIT 1
             """, (route['route_id'],))
