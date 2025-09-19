@@ -43,6 +43,25 @@ def haversine_m(a_lat, a_lon, b_lat, b_lon):
     h = math.sin(dphi/2)**2 + math.cos(p1)*math.cos(p2)*math.sin(dl/2)**2
     return 2*R*math.asin(math.sqrt(h))
 
+def normalize_gtfs_time(gtfs_time_str):
+    """Convert GTFS time format (which can exceed 24:00:00) to standard HH:MM:SS."""
+    try:
+        parts = gtfs_time_str.split(':')
+        if len(parts) != 3:
+            return gtfs_time_str
+
+        hour = int(parts[0])
+        minute = int(parts[1])
+        second = int(parts[2])
+
+        # Convert hours >= 24 to next day (24:25:00 -> 00:25:00)
+        if hour >= 24:
+            hour = hour % 24
+
+        return f"{hour:02d}:{minute:02d}:{second:02d}"
+    except (ValueError, IndexError):
+        return gtfs_time_str
+
 def choose_dt_s(p, c):
     """Choose best time delta with hygiene rules."""
     bt_p, bt_c = parse_bus_time(p["time_yymmddhhmmss"]), parse_bus_time(c["time_yymmddhhmmss"])
@@ -827,24 +846,60 @@ class BusMonitor:
 
             # Use bus system timestamp (GMT/UTC) - this is critical!
             actual_dt = datetime.strptime("20" + actual_time_str, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
-            day_of_week = actual_dt.weekday()  # 0=Monday
+            actual_hour = actual_dt.hour
             actual_time_hhmm = actual_time_str[6:10]
             actual_time_formatted = f"{actual_time_hhmm[:2]}:{actual_time_hhmm[2:]}:00"
 
-            # Find matching GTFS schedule
+            # Determine which service day to look up
+            # Times before 5:00 AM are considered part of the previous service day
+            # because GTFS represents them as 24:00+
+            if actual_hour < 5:
+                # Look up previous day's schedule (service day before)
+                service_dt = actual_dt - timedelta(days=1)
+                day_of_week = service_dt.weekday()  # 0=Monday
+                # Convert actual time to GTFS extended format (add 24 hours)
+                extended_hour = actual_hour + 24
+                gtfs_time_formatted = f"{extended_hour:02d}:{actual_time_hhmm[2:4]}:00"
+            else:
+                # Normal day schedule
+                day_of_week = actual_dt.weekday()  # 0=Monday
+                gtfs_time_formatted = actual_time_formatted
+
             # Convert day_of_week to GTFS calendar format
             day_columns = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
             day_column = day_columns[day_of_week]
 
             # Find the closest scheduled arrival time
+            # Compare using the appropriate GTFS time format (may be 24:00+ for early morning)
             cursor.execute(f"""
                 WITH scheduled_times AS (
                     SELECT
                         st.arrival_time,
                         st.trip_id,
-                        ABS(
-                            EXTRACT(EPOCH FROM (st.arrival_time::time - %s::time))
-                        ) AS time_diff_seconds
+                        -- For comparison, we need to handle both normal and extended times
+                        CASE
+                            WHEN %s LIKE '2%%:%%:%%' THEN
+                                -- We're looking for extended time (24:00+), compare directly
+                                ABS(
+                                    EXTRACT(EPOCH FROM INTERVAL '1 hour') *
+                                    (CAST(SPLIT_PART(st.arrival_time, ':', 1) AS INTEGER) - CAST(SPLIT_PART(%s, ':', 1) AS INTEGER))
+                                ) +
+                                ABS(
+                                    EXTRACT(EPOCH FROM INTERVAL '1 minute') *
+                                    (CAST(SPLIT_PART(st.arrival_time, ':', 2) AS INTEGER) - CAST(SPLIT_PART(%s, ':', 2) AS INTEGER))
+                                )
+                            ELSE
+                                -- Normal time comparison using normalized GTFS times
+                                ABS(EXTRACT(EPOCH FROM (
+                                    CASE
+                                        WHEN CAST(SPLIT_PART(st.arrival_time, ':', 1) AS INTEGER) >= 24 THEN
+                                            LPAD((CAST(SPLIT_PART(st.arrival_time, ':', 1) AS INTEGER) %% 24)::TEXT, 2, '0') ||
+                                            ':' || SPLIT_PART(st.arrival_time, ':', 2) || ':' || SPLIT_PART(st.arrival_time, ':', 3)
+                                        ELSE
+                                            st.arrival_time
+                                    END
+                                )::time - %s::time))
+                        END AS time_diff_seconds
                     FROM gtfs_stop_times st
                     JOIN gtfs_trips t ON st.trip_id = t.trip_id AND st.version_id = t.version_id
                     JOIN gtfs_calendar c ON t.service_id = c.service_id AND t.version_id = c.version_id
@@ -858,7 +913,8 @@ class BusMonitor:
                 WHERE time_diff_seconds <= 1800  -- Within 30 minutes
                 ORDER BY time_diff_seconds ASC
                 LIMIT 1
-            """, (actual_time_formatted, gtfs_version_id, arrival["current_stop"], arrival["route"]))
+            """, (gtfs_time_formatted, gtfs_time_formatted, gtfs_time_formatted, actual_time_formatted,
+                  gtfs_version_id, arrival["current_stop"], arrival["route"]))
 
             scheduled_result = cursor.fetchone()
             if not scheduled_result:
@@ -866,21 +922,29 @@ class BusMonitor:
 
             scheduled_time_str = scheduled_result["arrival_time"]
 
-            # Parse scheduled time (HH:MM:SS format)
-            scheduled_time_parts = scheduled_time_str.split(':')
+            # Normalize GTFS time (handle 24:00+ times)
+            normalized_time = normalize_gtfs_time(scheduled_time_str)
+            scheduled_time_parts = normalized_time.split(':')
             if len(scheduled_time_parts) != 3:
                 return None
 
-            scheduled_hour = int(scheduled_time_parts[0])
-            scheduled_minute = int(scheduled_time_parts[1])
-            scheduled_second = int(scheduled_time_parts[2])
+            try:
+                scheduled_hour = int(scheduled_time_parts[0])
+                scheduled_minute = int(scheduled_time_parts[1])
+                scheduled_second = int(scheduled_time_parts[2])
+            except ValueError:
+                return None
 
-            # Handle times after midnight (25:00:00 format in GTFS)
+            # Check if original time was >= 24 hours (next day schedule)
+            original_hour = int(scheduled_time_str.split(':')[0])
+            is_next_day = original_hour >= 24
+
             # Create scheduled datetime in UTC to match bus timestamp
-            if scheduled_hour >= 24:
+            if is_next_day:
+                # Times like 24:25:00 mean 00:25:00 of the next day
                 scheduled_dt = actual_dt.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
                 scheduled_dt = scheduled_dt.replace(
-                    hour=scheduled_hour - 24,
+                    hour=scheduled_hour,
                     minute=scheduled_minute,
                     second=scheduled_second
                 )
