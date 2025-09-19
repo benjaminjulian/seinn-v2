@@ -538,7 +538,7 @@ def station_name_buses(station_name):
                         WHERE route_id = bs.route
                     )
                 WHERE bs.route = %s
-                ORDER BY bs.timestamp DESC
+                ORDER BY bs.recorded_at DESC
                 LIMIT 1
             """, (route['route_id'],))
 
