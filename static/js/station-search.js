@@ -5,12 +5,11 @@ class StationSearch {
         this.clearButton = document.getElementById('clearSearch');
         this.findNearbyButton = document.getElementById('findNearby');
         this.nearbyResults = document.getElementById('nearbyResults');
-        this.systemStats = document.getElementById('systemStats');
+        this.stationDetails = document.getElementById('stationDetails');
 
         this.searchTimeout = null;
 
         this.initEventListeners();
-        this.loadSystemStats();
     }
 
     initEventListeners() {
@@ -62,10 +61,10 @@ class StationSearch {
 
     displaySearchResults(stations) {
         if (stations.length === 0) {
-            this.searchResults.innerHTML = '<div class="list-group-item">Engar stöðvar fundust</div>';
+            this.searchResults.innerHTML = '<div class="result-item">Engar stöðvar fundust</div>';
         } else {
             this.searchResults.innerHTML = stations.map(station => `
-                <div class="list-group-item list-group-item-action" data-station-name="${station.stop_name}">
+                <div class="result-item" data-station-name="${station.stop_name}">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="mb-1">${station.stop_name}</h6>
@@ -77,7 +76,7 @@ class StationSearch {
             `).join('');
 
             // Add click listeners to results
-            this.searchResults.querySelectorAll('.list-group-item-action').forEach(item => {
+            this.searchResults.querySelectorAll('.result-item').forEach(item => {
                 item.addEventListener('click', () => {
                     const stationName = item.dataset.stationName;
                     this.showStationNameDetails(stationName);
@@ -126,10 +125,10 @@ class StationSearch {
 
     displayNearbyResults(stations) {
         if (stations.length === 0) {
-            this.nearbyResults.innerHTML = `<div class="list-group-item">${t('NO_NEARBY_STATIONS')}</div>`;
+            this.nearbyResults.innerHTML = `<div class="result-item">${t('NO_NEARBY_STATIONS')}</div>`;
         } else {
             this.nearbyResults.innerHTML = stations.map(station => `
-                <div class="list-group-item list-group-item-action" data-station-id="${station.stop_id}">
+                <div class="result-item" data-station-id="${station.stop_id}">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="mb-1">${station.stop_name}</h6>
@@ -144,41 +143,58 @@ class StationSearch {
             `).join('');
 
             // Add click listeners
-            this.nearbyResults.querySelectorAll('.list-group-item-action').forEach(item => {
+            this.nearbyResults.querySelectorAll('.result-item').forEach(item => {
                 item.addEventListener('click', () => {
                     const stationId = item.dataset.stationId;
                     this.showStationDetails(stationId);
                 });
             });
         }
+
+        this.nearbyResults.style.display = 'block';
     }
 
     async showStationNameDetails(stationName) {
-        const modal = new bootstrap.Modal(document.getElementById('stationModal'));
-        const modalTitle = document.getElementById('stationModalTitle');
-        const modalBody = document.getElementById('stationModalBody');
-        const viewDetailLink = document.getElementById('viewStationDetail');
+        // Hide other results
+        this.hideSearchResults();
+        this.nearbyResults.style.display = 'none';
 
-        modalTitle.textContent = t('LOADING');
-        modalBody.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
-        viewDetailLink.style.display = 'none'; // Hide the view details link for now
-
-        modal.show();
+        // Show loading state
+        this.stationDetails.innerHTML = `
+            <div class="result-item">
+                <h5>${stationName}</h5>
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">${t('LOADING')}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        this.stationDetails.style.display = 'block';
 
         try {
             const response = await fetch(`/api/station-name/${encodeURIComponent(stationName)}/buses`);
             const data = await response.json();
 
             if (data.error) {
-                modalBody.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                this.stationDetails.innerHTML = `
+                    <div class="result-item">
+                        <h5>${stationName}</h5>
+                        <div class="alert alert-danger">${data.error}</div>
+                    </div>
+                `;
                 return;
             }
 
-            modalTitle.textContent = stationName;
-            this.renderStationNameModal(data, modalBody);
+            this.renderStationNameDetails(data);
         } catch (error) {
             console.error('Station details error:', error);
-            modalBody.innerHTML = `<div class="alert alert-danger">${t('ERROR_LOAD_STATION_DETAILS')}</div>`;
+            this.stationDetails.innerHTML = `
+                <div class="result-item">
+                    <h5>${stationName}</h5>
+                    <div class="alert alert-danger">${t('ERROR_LOAD_STATION_DETAILS')}</div>
+                </div>
+            `;
         }
     }
 
@@ -209,19 +225,25 @@ class StationSearch {
         }
     }
 
-    renderStationNameModal(data, container) {
+    renderStationNameDetails(data) {
         const { station_name, stations, approaching_buses } = data;
 
         if (approaching_buses.length === 0) {
-            container.innerHTML = `<div class="alert alert-info">${t('NO_DATA_AVAILABLE')}</div>`;
+            this.stationDetails.innerHTML = `
+                <div class="result-item">
+                    <h5>${station_name}</h5>
+                    <div class="alert alert-info">${t('NO_DATA_AVAILABLE')}</div>
+                </div>
+            `;
             return;
         }
 
         let html = `
-            <div class="mb-3">
+            <div class="result-item">
+                <h5>${station_name}</h5>
                 <small class="text-muted">${stations.length} ${stations.length === 1 ? 'stöð' : 'stöðvar'} með þessu nafni</small>
+                <h6 class="mt-3">${t('APPROACHING_BUSES')}</h6>
             </div>
-            <h6>${t('APPROACHING_BUSES')}</h6>
         `;
 
         approaching_buses.forEach(bus => {
@@ -229,28 +251,26 @@ class StationSearch {
             const delayClass = delayMin > 0 ? 'positive' : delayMin < 0 ? 'negative' : 'neutral';
 
             html += `
-                <div class="card mb-2">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="route-badge">${bus.route_short_name || bus.route_id}</span>
-                                <small class="text-muted ms-2">${bus.route_long_name || ''}</small>
+                <div class="result-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="route-badge">${bus.route_short_name || bus.route_id}</span>
+                            <small class="text-muted ms-2">${bus.route_long_name || ''}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="delay-${delayClass}">
+                                ${delayMin > 0 ? '+' : ''}${delayMin} ${t('MINUTES_ABBREV')}
                             </div>
-                            <div class="text-end">
-                                <div class="delay-${delayClass}">
-                                    ${delayMin > 0 ? '+' : ''}${delayMin} ${t('MINUTES_ABBREV')}
-                                </div>
-                                <small class="text-muted">
-                                    ${bus.bus_status.speed ? `${Math.round(bus.bus_status.speed)} km/h` : ''}
-                                </small>
-                            </div>
+                            <small class="text-muted">
+                                ${bus.bus_status.speed_kmh ? `${Math.round(bus.bus_status.speed_kmh)} km/h` : ''}
+                            </small>
                         </div>
                     </div>
                 </div>
             `;
         });
 
-        container.innerHTML = html;
+        this.stationDetails.innerHTML = html;
     }
 
     renderStationModal(data, container) {
@@ -318,47 +338,6 @@ class StationSearch {
         container.innerHTML = html;
     }
 
-    async loadSystemStats() {
-        try {
-            const response = await fetch('/api/analytics/system-stats');
-            const stats = await response.json();
-
-            const formatNumber = (num) => {
-                if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-                if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-                return num.toString();
-            };
-
-            const lastUpdate = stats.latest_update ?
-                new Date(stats.latest_update).toLocaleString() : 'Unknown';
-
-            this.systemStats.innerHTML = `
-                <div class="row text-center">
-                    <div class="col-6 mb-2">
-                        <strong class="text-primary">${formatNumber(stats.total_records)}</strong><br>
-                        <small class="text-muted">Heildarskráningar</small>
-                    </div>
-                    <div class="col-6 mb-2">
-                        <strong class="text-success">${stats.unique_routes}</strong><br>
-                        <small class="text-muted">Leiðir</small>
-                    </div>
-                    <div class="col-6 mb-2">
-                        <strong class="text-warning">${formatNumber(stats.recent_records)}</strong><br>
-                        <small class="text-muted">Síðustu 24 klst</small>
-                    </div>
-                    <div class="col-6 mb-2">
-                        <strong class="text-info">${formatNumber(stats.recent_delays)}</strong><br>
-                        <small class="text-muted">Nýlegar tafir</small>
-                    </div>
-                </div>
-                <hr>
-                <small class="text-muted">Síðasta uppfærsla: ${lastUpdate}</small>
-            `;
-        } catch (error) {
-            console.error('System stats error:', error);
-            this.systemStats.innerHTML = '<div class="alert alert-warning">Gat ekki hlaðið kerfistölfræði</div>';
-        }
-    }
 
     showSearchResults() {
         this.searchResults.style.display = 'block';

@@ -1,10 +1,61 @@
-body {
-    background-color: #f8f9fa;
+/* Seinn.is inspired design with simplified layout */
+:root {
+    --primary-red: #B2272D;
+    --secondary-yellow: #F9D72F;
+    --black: #000000;
+    --white: #FFFFFF;
+    --light-gray: #f8f9fa;
+    --border-gray: #dee2e6;
 }
 
-.card {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    border: 1px solid rgba(0, 0, 0, 0.125);
+body {
+    background-color: var(--white);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--black);
+    margin: 0;
+    padding: 0;
+}
+
+/* Simplified container styling */
+.main-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.search-container {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.search-title {
+    font-size: 2.5rem;
+    font-weight: 300;
+    margin-bottom: 2rem;
+    color: var(--black);
+}
+
+.results-container {
+    border: 2px solid var(--border-gray);
+    border-radius: 8px;
+    background: var(--white);
+    margin-top: 1rem;
+    overflow: hidden;
+}
+
+.result-item {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-gray);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.result-item:last-child {
+    border-bottom: none;
+}
+
+.result-item:hover {
+    background-color: var(--light-gray);
 }
 
 .list-group-item {
@@ -46,6 +97,48 @@ body {
     background: #f8f9fa;
 }
 
+/* Form and input styling */
+.form-control {
+    border: 2px solid var(--border-gray);
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-control:focus {
+    border-color: var(--primary-red);
+    box-shadow: 0 0 0 0.2rem rgba(178, 39, 45, 0.25);
+}
+
+.btn-primary {
+    background-color: var(--primary-red);
+    border-color: var(--primary-red);
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background-color: #8a1e23;
+    border-color: #8a1e23;
+}
+
+.btn-success {
+    background-color: var(--secondary-yellow);
+    border-color: var(--secondary-yellow);
+    color: var(--black);
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+}
+
+.btn-success:hover {
+    background-color: #e6c426;
+    border-color: #e6c426;
+    color: var(--black);
+}
+
 .route-badge {
     display: inline-block;
     padding: 0.25em 0.6em;
@@ -56,8 +149,8 @@ body {
     white-space: nowrap;
     vertical-align: baseline;
     border-radius: 0.25rem;
-    background-color: #0d6efd;
-    color: white;
+    background-color: var(--primary-red);
+    color: var(--white);
     margin-right: 0.5em;
     margin-bottom: 0.25em;
 }
@@ -74,8 +167,37 @@ body {
     background-color: #dc3545;
 }
 
+/* Navigation styling */
+.navbar {
+    background-color: var(--primary-red) !important;
+    padding: 1rem 0;
+}
+
 .navbar-brand {
-    font-weight: 600;
+    font-weight: 300;
+    font-size: 1.5rem;
+    color: var(--white) !important;
+}
+
+.navbar-nav .nav-link {
+    color: var(--white) !important;
+    font-weight: 400;
+}
+
+.navbar-nav .nav-link:hover {
+    color: var(--secondary-yellow) !important;
+}
+
+.btn-outline-light {
+    border-color: var(--white);
+    color: var(--white);
+    background-color: transparent;
+}
+
+.btn-outline-light:hover {
+    background-color: var(--secondary-yellow);
+    border-color: var(--secondary-yellow);
+    color: var(--black);
 }
 
 .card-header h4,
