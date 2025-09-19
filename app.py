@@ -421,14 +421,18 @@ def search_stations():
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         cursor.execute("""
-            SELECT DISTINCT s.stop_id, s.stop_name, s.stop_lat, s.stop_lon, s.stop_code
+            SELECT DISTINCT s.stop_name,
+                   COUNT(*) as station_count,
+                   AVG(s.stop_lat) as avg_lat,
+                   AVG(s.stop_lon) as avg_lon
             FROM gtfs_stops s
             JOIN gtfs_versions v ON s.version_id = v.id
             WHERE v.is_active = TRUE
-            AND (LOWER(s.stop_name) LIKE LOWER(%s) OR LOWER(s.stop_code) LIKE LOWER(%s))
+            AND LOWER(s.stop_name) LIKE LOWER(%s)
+            GROUP BY s.stop_name
             ORDER BY s.stop_name
             LIMIT %s
-        """, (f'%{query}%', f'%{query}%', limit))
+        """, (f'%{query}%', limit))
 
         stations = cursor.fetchall()
         return jsonify([dict(station) for station in stations])
@@ -478,6 +482,84 @@ def nearby_stations():
 
     except Exception as e:
         logger.error(f"Error finding nearby stations: {e}")
+        return jsonify({'error': t('ERROR_DATABASE')}), 500
+    finally:
+        return_db_connection(conn)
+
+@app.route('/api/station-name/<station_name>/buses')
+def station_name_buses(station_name):
+    """Get approaching buses for all stations with the given name."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # First, get all stations with this name
+        cursor.execute("""
+            SELECT s.stop_id, s.stop_name, s.stop_lat, s.stop_lon
+            FROM gtfs_stops s
+            JOIN gtfs_versions v ON s.version_id = v.id
+            WHERE v.is_active = TRUE
+            AND LOWER(s.stop_name) = LOWER(%s)
+        """, (station_name,))
+
+        stations = cursor.fetchall()
+        if not stations:
+            return jsonify({'error': t('ERROR_STATION_NOT_FOUND')}), 404
+
+        # Get all routes that serve these stations
+        station_ids = [s['stop_id'] for s in stations]
+        placeholders = ','.join(['%s'] * len(station_ids))
+
+        cursor.execute(f"""
+            SELECT DISTINCT r.route_id, r.route_short_name, r.route_long_name
+            FROM gtfs_routes r
+            JOIN gtfs_versions rv ON r.version_id = rv.id AND rv.is_active = TRUE
+            JOIN bus_delays d ON r.route_id = d.route_id
+            WHERE d.stop_id IN ({placeholders})
+            AND d.recorded_at >= NOW() - INTERVAL '24 hours'
+        """, station_ids)
+
+        routes = cursor.fetchall()
+
+        # For each route, find the latest bus position and delay info
+        approaching_buses = []
+        for route in routes:
+            # Get the most recent bus status for this route
+            cursor.execute("""
+                SELECT bs.*,
+                       bd.delay_seconds as latest_delay,
+                       bd.scheduled_arrival_time,
+                       bd.actual_arrival_time
+                FROM bus_status bs
+                LEFT JOIN bus_delays bd ON bs.route_id = bd.route_id
+                    AND bd.recorded_at = (
+                        SELECT MAX(recorded_at)
+                        FROM bus_delays
+                        WHERE route_id = bs.route_id
+                    )
+                WHERE bs.route_id = %s
+                ORDER BY bs.timestamp DESC
+                LIMIT 1
+            """, (route['route_id'],))
+
+            bus_status = cursor.fetchone()
+            if bus_status:
+                approaching_buses.append({
+                    'route_id': route['route_id'],
+                    'route_short_name': route['route_short_name'],
+                    'route_long_name': route['route_long_name'],
+                    'bus_status': dict(bus_status),
+                    'latest_delay_seconds': bus_status.get('latest_delay', 0)
+                })
+
+        return jsonify({
+            'station_name': station_name,
+            'stations': [dict(s) for s in stations],
+            'approaching_buses': approaching_buses
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting station name buses: {e}")
         return jsonify({'error': t('ERROR_DATABASE')}), 500
     finally:
         return_db_connection(conn)

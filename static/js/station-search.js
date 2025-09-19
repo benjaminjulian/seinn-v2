@@ -65,12 +65,11 @@ class StationSearch {
             this.searchResults.innerHTML = '<div class="list-group-item">Engar stöðvar fundust</div>';
         } else {
             this.searchResults.innerHTML = stations.map(station => `
-                <div class="list-group-item list-group-item-action" data-station-id="${station.stop_id}">
+                <div class="list-group-item list-group-item-action" data-station-name="${station.stop_name}">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="mb-1">${station.stop_name}</h6>
-                            <small class="text-muted">ID: ${station.stop_id}</small>
-                            ${station.stop_code ? `<span class="badge bg-secondary ms-2">${station.stop_code}</span>` : ''}
+                            <small class="text-muted">${station.station_count} stöðvar</small>
                         </div>
                         <i class="bi bi-arrow-right"></i>
                     </div>
@@ -80,8 +79,8 @@ class StationSearch {
             // Add click listeners to results
             this.searchResults.querySelectorAll('.list-group-item-action').forEach(item => {
                 item.addEventListener('click', () => {
-                    const stationId = item.dataset.stationId;
-                    this.showStationDetails(stationId);
+                    const stationName = item.dataset.stationName;
+                    this.showStationNameDetails(stationName);
                 });
             });
         }
@@ -154,6 +153,35 @@ class StationSearch {
         }
     }
 
+    async showStationNameDetails(stationName) {
+        const modal = new bootstrap.Modal(document.getElementById('stationModal'));
+        const modalTitle = document.getElementById('stationModalTitle');
+        const modalBody = document.getElementById('stationModalBody');
+        const viewDetailLink = document.getElementById('viewStationDetail');
+
+        modalTitle.textContent = t('LOADING');
+        modalBody.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+        viewDetailLink.style.display = 'none'; // Hide the view details link for now
+
+        modal.show();
+
+        try {
+            const response = await fetch(`/api/station-name/${encodeURIComponent(stationName)}/buses`);
+            const data = await response.json();
+
+            if (data.error) {
+                modalBody.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+
+            modalTitle.textContent = stationName;
+            this.renderStationNameModal(data, modalBody);
+        } catch (error) {
+            console.error('Station details error:', error);
+            modalBody.innerHTML = `<div class="alert alert-danger">${t('ERROR_LOAD_STATION_DETAILS')}</div>`;
+        }
+    }
+
     async showStationDetails(stationId) {
         const modal = new bootstrap.Modal(document.getElementById('stationModal'));
         const modalTitle = document.getElementById('stationModalTitle');
@@ -179,6 +207,50 @@ class StationSearch {
             console.error('Station details error:', error);
             modalBody.innerHTML = '<div class="alert alert-danger">Gat ekki hlaðið upplýsingar um stöð</div>';
         }
+    }
+
+    renderStationNameModal(data, container) {
+        const { station_name, stations, approaching_buses } = data;
+
+        if (approaching_buses.length === 0) {
+            container.innerHTML = `<div class="alert alert-info">${t('NO_DATA_AVAILABLE')}</div>`;
+            return;
+        }
+
+        let html = `
+            <div class="mb-3">
+                <small class="text-muted">${stations.length} ${stations.length === 1 ? 'stöð' : 'stöðvar'} með þessu nafni</small>
+            </div>
+            <h6>${t('APPROACHING_BUSES')}</h6>
+        `;
+
+        approaching_buses.forEach(bus => {
+            const delayMin = Math.round((bus.latest_delay_seconds || 0) / 60);
+            const delayClass = delayMin > 0 ? 'positive' : delayMin < 0 ? 'negative' : 'neutral';
+
+            html += `
+                <div class="card mb-2">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="route-badge">${bus.route_short_name || bus.route_id}</span>
+                                <small class="text-muted ms-2">${bus.route_long_name || ''}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="delay-${delayClass}">
+                                    ${delayMin > 0 ? '+' : ''}${delayMin} ${t('MINUTES_ABBREV')}
+                                </div>
+                                <small class="text-muted">
+                                    ${bus.bus_status.speed ? `${Math.round(bus.bus_status.speed)} km/h` : ''}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
     }
 
     renderStationModal(data, container) {
