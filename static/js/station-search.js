@@ -240,6 +240,11 @@ class StationSearch {
         `;
 
         approaching_buses.forEach(bus => {
+            // Skip buses with no actual data
+            if (!bus.bus_status) {
+                return;
+            }
+
             const delayMin = Math.round((bus.latest_delay_seconds || 0) / 60);
             const delayClass = delayMin > 0 ? 'positive' : delayMin < 0 ? 'negative' : 'neutral';
 
@@ -249,6 +254,29 @@ class StationSearch {
                 directionInfo = `<div><small class="text-muted">→ ${bus.trip_headsign}</small></div>`;
             } else if (bus.direction_id !== null) {
                 directionInfo = `<div><small class="text-muted">→ ${t('DIRECTION')} ${bus.direction_id}</small></div>`;
+            }
+
+            // Build arrival info
+            let arrivalInfo = '';
+            if (bus.stations_away !== null && bus.stations_away >= 0) {
+                const stationsText = bus.stations_away === 1 ? t('STATION_AWAY') : t('STATIONS_AWAY');
+                arrivalInfo += `<small class="text-muted">${bus.stations_away} ${stationsText}</small><br>`;
+            }
+
+            if (bus.estimated_arrival) {
+                try {
+                    const arrivalTime = new Date(bus.estimated_arrival);
+                    const now = new Date();
+                    const minutesUntil = Math.round((arrivalTime - now) / (1000 * 60));
+
+                    if (minutesUntil > 0) {
+                        arrivalInfo += `<small class="text-muted">${t('ARRIVING_IN')} ${minutesUntil} ${t('MINUTES_ABBREV')}</small><br>`;
+                    } else {
+                        arrivalInfo += `<small class="text-muted">${t('ARRIVING_NOW')}</small><br>`;
+                    }
+                } catch (e) {
+                    // Invalid date, skip arrival time
+                }
             }
 
             // Build delay measurement info
@@ -266,15 +294,18 @@ class StationSearch {
                                 <small class="text-muted ms-2">${bus.route_long_name || ''}</small>
                             </div>
                             ${directionInfo}
+                            <div class="mt-1">
+                                ${arrivalInfo}
+                            </div>
                         </div>
                         <div class="text-end">
-                            <div class="delay-${delayClass} fw-bold">
+                            <div class="delay-${delayClass} fw-bold mb-1">
                                 ${delayMin > 0 ? '+' : ''}${delayMin} ${t('MINUTES_ABBREV')}
                             </div>
                             ${delayMeasurementInfo}
                             <div>
                                 <small class="text-muted">
-                                    ${bus.bus_status.speed_kmh ? `${Math.round(bus.bus_status.speed_kmh)} km/h` : ''}
+                                    ${bus.bus_status && bus.bus_status.speed_kmh ? `${Math.round(bus.bus_status.speed_kmh)} km/h` : ''}
                                 </small>
                             </div>
                         </div>

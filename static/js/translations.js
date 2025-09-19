@@ -98,6 +98,10 @@ const TRANSLATIONS = {
         APPROACHING_BUSES: "Approaching Buses",
         DIRECTION: "Direction",
         MEASURED_AT: "Measured at",
+        STATION_AWAY: "station away",
+        STATIONS_AWAY: "stations away",
+        ARRIVING_IN: "Arriving in",
+        ARRIVING_NOW: "Arriving now",
         AVG_DELAY_LABEL: "Avg delay:",
         EARLY_ARRIVAL: "Early:",
 
@@ -245,6 +249,10 @@ const TRANSLATIONS = {
         APPROACHING_BUSES: "Vagnar á leið",
         DIRECTION: "Stefna",
         MEASURED_AT: "Mælt við",
+        STATION_AWAY: "stöð í burtu",
+        STATIONS_AWAY: "stöðvar í burtu",
+        ARRIVING_IN: "Kemur eftir",
+        ARRIVING_NOW: "Kemur núna",
         AVG_DELAY_LABEL: "Meðaltöf:",
         EARLY_ARRIVAL: "Fyrirtækni:",
 
