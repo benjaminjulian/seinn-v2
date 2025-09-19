@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Straeto Bus Monitor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-graph-up"></i> System Analytics</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h3 id="totalRecords">-</h3>
+                                <p class="mb-0">Total Records</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3 id="uniqueRoutes">-</h3>
+                                <p class="mb-0">Active Routes</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body text-center">
+                                <h3 id="recentRecords">-</h3>
+                                <p class="mb-0">Last 24h</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h3 id="recentDelays">-</h3>
+                                <p class="mb-0">Recent Delays</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Speed Heatmap</h5>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="speedTimeFilter" id="speed24h" value="24" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="speed24h">24h</label>
+
+                    <input type="radio" class="btn-check" name="speedTimeFilter" id="speed48h" value="48">
+                    <label class="btn btn-outline-primary btn-sm" for="speed48h">48h</label>
+
+                    <input type="radio" class="btn-check" name="speedTimeFilter" id="speed7d" value="168">
+                    <label class="btn btn-outline-primary btn-sm" for="speed7d">7d</label>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="speedMap" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Route Performance</h5>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="routeTimeFilter" id="route24h" value="24" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="route24h">24h</label>
+
+                    <input type="radio" class="btn-check" name="routeTimeFilter" id="route48h" value="48">
+                    <label class="btn btn-outline-primary btn-sm" for="route48h">48h</label>
+
+                    <input type="radio" class="btn-check" name="routeTimeFilter" id="route7d" value="168">
+                    <label class="btn btn-outline-primary btn-sm" for="route7d">7d</label>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="routeChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Route Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="routeStatsTable">
+                        <thead>
+                            <tr>
+                                <th>Route</th>
+                                <th>Total Arrivals</th>
+                                <th>Avg Delay</th>
+                                <th>On Time %</th>
+                                <th>Late %</th>
+                                <th>Very Late %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+{% endblock %}

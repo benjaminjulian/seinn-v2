@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{{ station.stop_name }} - Station Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Station Search</a></li>
+                <li class="breadcrumb-item active">{{ station.stop_name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="bi bi-bus-front"></i> {{ station.stop_name }}
+                    {% if station.stop_code %}
+                        <span class="badge bg-secondary">{{ station.stop_code }}</span>
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if station.stop_lat and station.stop_lon %}
+                <div id="stationMap" style="height: 300px;" class="mb-3"></div>
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-sm-6">
+                        <strong>Station ID:</strong> {{ station.stop_id }}
+                    </div>
+                    {% if station.stop_code %}
+                    <div class="col-sm-6">
+                        <strong>Stop Code:</strong> {{ station.stop_code }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if station.stop_lat and station.stop_lon %}
+                <div class="row mt-2">
+                    <div class="col-sm-6">
+                        <strong>Latitude:</strong> {{ "%.6f"|format(station.stop_lat) }}
+                    </div>
+                    <div class="col-sm-6">
+                        <strong>Longitude:</strong> {{ "%.6f"|format(station.stop_lon) }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-clock"></i> Recent Delays</h5>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="timeFilter" id="time24h" value="24" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="time24h">24h</label>
+
+                    <input type="radio" class="btn-check" name="timeFilter" id="time48h" value="48">
+                    <label class="btn btn-outline-primary btn-sm" for="time48h">48h</label>
+
+                    <input type="radio" class="btn-check" name="timeFilter" id="time7d" value="168">
+                    <label class="btn btn-outline-primary btn-sm" for="time7d">7d</label>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="delayData" class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading delays...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Route Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div id="routeStats">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading stats...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Delay Chart</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="delayChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const stationId = '{{ station.stop_id }}';
+    const stationLat = {{ station.stop_lat or 'null' }};
+    const stationLon = {{ station.stop_lon or 'null' }};
+    const stationName = '{{ station.stop_name }}';
+</script>
+<script src="{{ url_for('static', filename='js/station-detail.js') }}"></script>
+{% endblock %}

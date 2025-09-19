@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Station Search - Straeto Bus Monitor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-search"></i> Find Bus Station</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Search by Name</h5>
+                        <div class="input-group mb-3">
+                            <input type="text" id="stationSearch" class="form-control"
+                                   placeholder="Enter station name..." autocomplete="off">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </div>
+                        <div id="searchResults" class="list-group mb-3" style="display: none;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Find Nearby Stations</h5>
+                        <button class="btn btn-success mb-3" id="findNearby">
+                            <i class="bi bi-geo-alt"></i> Use My Location
+                        </button>
+                        <div id="nearbyResults" class="list-group"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> How to Use</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-search text-primary"></i>
+                        Search for stations by name or code
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-geo-alt text-success"></i>
+                        Find stations near your current location
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-clock text-info"></i>
+                        View real-time delay information
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-graph-up text-warning"></i>
+                        Check analytics for route performance
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-activity"></i> System Status</h5>
+            </div>
+            <div class="card-body">
+                <div id="systemStats" class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Selected Station Modal -->
+<div class="modal fade" id="stationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="stationModalTitle">Station Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="stationModalBody">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" class="btn btn-primary" id="viewStationDetail">View Full Details</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/station-search.js') }}"></script>
+{% endblock %}
