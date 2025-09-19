@@ -167,7 +167,7 @@ def database_status():
         for key, value in status_info.items():
             html += f"<li><strong>{key}:</strong> {value}</li>"
         html += "</ul>"
-        html += '<p><a href="/init-db">Initialize Database</a> | <a href="/test-monitor">Test Monitor</a> | <a href="/">Home</a></p>'
+        html += '<p><a href="/init-db">Initialize Database</a> | <a href="/test-monitor">Test Monitor</a> | <a href="/monitor-status">Monitor Status</a> | <a href="/">Home</a></p>'
 
         return html, 200
 
@@ -510,6 +510,60 @@ def system_stats():
     finally:
         return_db_connection(conn)
 
+@app.route('/monitor-status')
+def monitor_status():
+    """Show background monitor status."""
+    from background_monitor import background_monitor
+    status = background_monitor.get_status()
+
+    html = f"""
+    <h1>Background Monitor Status</h1>
+    <ul>
+        <li><strong>Running:</strong> {'✅ Yes' if status['running'] else '❌ No'}</li>
+        <li><strong>Interval:</strong> {status['interval']} seconds</li>
+        <li><strong>Database:</strong> {'✅ Configured' if status['database_configured'] else '❌ Not configured'}</li>
+    </ul>
+    <p>
+        <a href="/start-monitor">Start Monitor</a> |
+        <a href="/stop-monitor">Stop Monitor</a> |
+        <a href="/db-status">Database Status</a> |
+        <a href="/">Home</a>
+    </p>
+    """
+    return html, 200
+
+@app.route('/start-monitor')
+def start_monitor():
+    """Start the background monitor."""
+    try:
+        from background_monitor import background_monitor
+        background_monitor.start()
+        return "✅ Background monitor started", 200
+    except Exception as e:
+        logger.error(f"Failed to start background monitor: {e}")
+        return f"❌ Failed to start monitor: {str(e)}", 500
+
+@app.route('/stop-monitor')
+def stop_monitor():
+    """Stop the background monitor."""
+    try:
+        from background_monitor import background_monitor
+        background_monitor.stop()
+        return "✅ Background monitor stopped", 200
+    except Exception as e:
+        logger.error(f"Failed to stop background monitor: {e}")
+        return f"❌ Failed to stop monitor: {str(e)}", 500
+
 if __name__ == '__main__':
     init_db_pool()
+
+    # Start background monitoring if in production
+    if not app.debug:
+        try:
+            from background_monitor import background_monitor
+            background_monitor.start()
+            logger.info("Background bus monitoring started")
+        except Exception as e:
+            logger.error(f"Failed to start background monitoring: {e}")
+
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
